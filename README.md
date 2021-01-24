@@ -18,16 +18,18 @@ The following update methods are currently implemented:
 
 ### APIs
 
-* INWX JSON-RPC-API  
+* INWX.com JSON-RPC-API  
   Limitations:
   - minimum TTL is 300 (5 minutes)
 
 ### DynDNS2
 
-* INWX DynDNS2 protocol  
+* INWX.com  
   Limitations:
   - minimum TTL is 60 (1 minute)
   - one DynDNS account with one hostname is for free
+* dynv6.com
+  - note: assign your token to the password setting
 
 ## 📦 Requirements
 

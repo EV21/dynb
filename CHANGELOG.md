@@ -5,6 +5,8 @@
 
 ### New
 
+* :sparkles: add DynDNS2 support for dynv6.com. [Eduard Veit]
+
 * :sparkles: add .gitchangelog.rc. [Eduard Veit]
 
 * :sparkles: add dynb. [Eduard Veit]

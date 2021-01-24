@@ -168,22 +168,43 @@ function updateRecord() {
 
 # using DynDNS2 protocol
 function dynupdate() {
+  myip_str=
+  myipv6_str=
+
   INWX_DYNDNS_UPDATE_URL="https://dyndns.inwx.com/nic/update?"
+  DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$_dyn_domain&token=$_password&"
+
   if [[ $_serviceProvider == "inwx" ]]; then
     dyndns_update_url=$INWX_DYNDNS_UPDATE_URL
+    myip_str=myip
+    myipv6_str=myipv6
   fi
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]; then
-    dyndns_update_url="${dyndns_update_url}myip=${_new_IPv4}&myipv6=${_new_IPv6}"
-  fi
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]; then
-    dyndns_update_url="${dyndns_update_url}myip=${_new_IPv4}"
-  fi
-  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]; then
-    dyndns_update_url="${dyndns_update_url}myipv6=${_new_IPv6}"
+  if [[ $_serviceProvider == "dynv6" ]]; then
+    dyndns_update_url="${DYNV6_DYNDNS_UPDATE_URL}"
+    myip_str=ipv4
+    myipv6_str=ipv6
   fi
 
-  result=$(curl --silent --user $_username:$_password "${dyndns_update_url}" )
-  case $result in
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]; then
+    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}&${myipv6_str}=${_new_IPv6}"
+  fi
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]; then
+    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}"
+  fi
+  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]; then
+    dyndns_update_url="${dyndns_update_url}${myipv6_str}=${_new_IPv6}"
+  fi
+
+  ## request ##
+  if [[ $_serviceProvider == "dynv6" ]]; then
+    response=$(curl --silent "${dyndns_update_url}" )
+    #echo $dyndns_update_url
+  fi
+  if [[ $_serviceProvider == "inwx" ]]; then
+    response=$(curl --silent --user "$_username":"$_password" "${dyndns_update_url}" )
+  fi
+
+  case $response in
     good )
     echo "The DynDNS update has been executed."
     return
@@ -218,6 +239,10 @@ function dynupdate() {
     ;;
     dnserr )
     echo "There is an internal error in the dyndns update system"
+    return
+    ;;
+    * )
+    echo "$response"
     return
     ;;
   esac
