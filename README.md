@@ -1,5 +1,5 @@
-# 🔃 dynb
-dynb - dynamic DNS update script, written in bash
+# 🔃 DynB
+DynB - dynamic DNS update script, written in bash
 
 IPv4 (A) and IPv6 (AAAA) record updates are supported.
 <!-- TOC -->
@@ -25,11 +25,7 @@ The following update methods are currently implemented:
 ### DynDNS2
 
 * INWX.com  
-  Limitations:
-  - minimum TTL is 60 (1 minute)
-  - one DynDNS account with one hostname is for free
 * dynv6.com
-  - note: assign your token to the password setting
 
 ## 📦 Requirements
 
