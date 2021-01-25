@@ -11,6 +11,12 @@
 
 * :sparkles: add dynb. [Eduard Veit]
 
+### Fix
+
+* :bug: fix sourcing of config file. [Eduard Veit]
+
+  :recycle: do some shellcheck fixes
+
 ### Documentation
 
 * :memo: add CHANGELOG.md. [Eduard Veit]

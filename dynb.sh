@@ -12,16 +12,16 @@ _version=0.1.0
 ## Configuration ##
 ###################
 
-_dyn_domain=dyndns.example.com
+_dyn_domain=
 
 ## service provider could be inwx
-_serviceProvider=inwx
+_serviceProvider=
 
 ## update method options: domrobot, dyndns
-_update_method=domrobot
+_update_method=
 
 ## ip mode could be either: 4, 6 or dual for dualstack
-_ip_mode=dual
+_ip_mode=
 
 ## If you are using the DomRobot RPC-API enter your credentials for the web interface login here
 ## If you are using the DynDNS2 protocol enter your credentials here
@@ -83,18 +83,20 @@ dynb --ip-mode dualstack --update-method dyndns --service-provider inwx --domain
 EOF
 )"
 
+function echoerr() { printf "%s\n" "$*" >&2; }
+
 # The main domain or another identifier for the zone is required for the updateRecord call
 function getMainDomain() {
   request=$( echo "{}" | \
-      jq '(.method="'nameserver.list'")' | \
-      jq '(.params.user="'$_username'")' | \
-      jq '(.params.pass="'$_password'")'
+      jq '(.method="nameserver.list")' | \
+      jq "(.params.user=\"$_username\")" | \
+      jq "(.params.pass=\"$_password\")"
     )
 
   response=$(curl --silent  \
       --request POST $_INWX_JSON_API_URL \
      --header "Content-Type: application/json" \
-     --data "$request" | jq '.resData.domains[] | select(inside(.domain="'"$_dyn_domain"'"))'
+     --data "$request" | jq ".resData.domains[] | select(inside(.domain=\"$_dyn_domain\"))"
     )
   _main_domain=$( echo "$response" | jq --raw-output '.domain'  )
 }
@@ -102,10 +104,10 @@ function getMainDomain() {
 function fetchDNSRecords() {
   request=$( echo "{}" | \
       jq '(.method="'nameserver.info'")' | \
-      jq '(.params.user="'$_username'")' | \
-      jq '(.params.pass="'$_password'")' | \
-      jq '(.params.domain="'"$_main_domain"'")' | \
-      jq '(.params.name="'"$_dyn_domain"'")'
+      jq "(.params.user=\"$_username\")" | \
+      jq "(.params.pass=\"$_password\")" | \
+      jq "(.params.domain=\"$_main_domain\")" | \
+      jq "(.params.name=\"$_dyn_domain\")"
     )
 
   response=$( curl --silent  \
@@ -114,19 +116,19 @@ function fetchDNSRecords() {
      --data "$request"
     )
 
-  _dns_records=$( echo $response | jq '.resData.record[]' )
+  _dns_records=$( echo "$response" | jq '.resData.record[]' )
 }
 
 # requires parameter A or AAAA
 # result to stdout 
 function getRecordID() {
-  echo $_dns_records | jq 'select(.type == "'${1}'") | .id'
+  echo "$_dns_records" | jq "select(.type == \"${1}\") | .id"
 }
 
 # requires parameter A or AAAA
 # result to stdout
 function getDNSIP() {
-  echo $_dns_records | jq --raw-output 'select(.type == "'${1}'") | .content'
+  echo "$_dns_records" | jq --raw-output "select(.type == \"${1}\") | .content"
 }
 
 # requires parameter
@@ -134,7 +136,7 @@ function getDNSIP() {
 # 2. param: IP check server address
 # result to stdout
 function getRemoteIP() {
-  curl --silent --ipv${1} --dns-servers 1.1.1.1 --location ${2}
+  curl --silent --ipv"${1}" --dns-servers 1.1.1.1 --location "${2}"
 }
 
 # requires parameter
@@ -150,13 +152,14 @@ function updateRecord() {
   fi
   if [[ $IP != "" ]]; then
   request=$( echo "{}" | \
-      jq '(.method="'nameserver.updateRecord'")' | \
-      jq '(.params.user="'$_username'")' | \
-      jq '(.params.pass="'$_password'")' | \
-      jq '(.params.id="'$ID'")' | \
-      jq '(.params.content="'$IP'")' | \
-      jq '(.params.ttl="'$TTL'")'
+      jq '(.method="nameserver.updateRecord")' | \
+      jq "(.params.user=\"$_username\")" | \
+      jq "(.params.pass=\"$_password\")" | \
+      jq "(.params.id=\"$ID\")" | \
+      jq "(.params.content=\"$IP\")" | \
+      jq "(.params.ttl=\"$TTL\")"
     )
+
   response=$(curl --silent  \
       --request POST $_INWX_JSON_API_URL \
       --header "Content-Type: application/json" \
@@ -363,7 +366,7 @@ function checkDependencies() {
 ## MAIN section ##
 ##################
 
-FILE=$(dirname "$0")/.env
+FILE=$(dirname "$(realpath "$0")")/.env
 if test -f "$FILE"; then
   # shellcheck source=.env
   # shellcheck disable=SC1091
