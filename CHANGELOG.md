@@ -5,6 +5,8 @@
 
 ### New
 
+* :sparkles: add interpretaton of status codes and act accordingly. [Eduard Veit]
+
 * :sparkles: make network interface configurable. [Eduard Veit]
 
 * :sparkles: add DynDNS2 support for dynv6.com. [Eduard Veit]
