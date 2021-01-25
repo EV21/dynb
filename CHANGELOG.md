@@ -5,6 +5,8 @@
 
 ### New
 
+* :sparkles: make network interface configurable. [Eduard Veit]
+
 * :sparkles: add DynDNS2 support for dynv6.com. [Eduard Veit]
 
 * :sparkles: add .gitchangelog.rc. [Eduard Veit]

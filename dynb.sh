@@ -28,16 +28,24 @@ _ip_mode=
 _username=
 _password=
 
- ## TTL (time to live) minimum allowed value by inwx is 300 (5 minutes)
+ ## TTL (time to live) for the DNS record
+ ## This setting is only relevant for API based record updates (not DnyDNS2!)
+ ## minimum allowed TTL value by inwx is 300 (5 minutes)
 TTL=300
 
 ## The IP-Check sites (some sites have different urls for v4 and v6)
-## pro tip: use your own ip check server for privacy
+## Pro tip: use your own ip check server for privacy
 ## it could be as simple as that... 
 ## create an index.php with <?php echo $_SERVER['REMOTE_ADDR']; ?>
 _ipv4_checker=api64.ipify.org
 _ipv6_checker=api64.ipify.org
+
 _DNS_checkServer=1.1.1.1
+
+## if you are actively using multiple network interfaces you might want to specify this
+## normally the default value is okay
+#_network_interface=eth0
+_network_interface=
 
 ######################################################
 ## You don't need to change the following variables ##
@@ -49,6 +57,7 @@ _main_domain=
 _has_getopt=
 _is_IPv4_enabled=false
 _is_IPv6_enabled=false
+_interface_str=
 
 [[ -x $(command -v jq 2> /dev/null) ]] || {
   echo "This script depends on jq and it is not available." >&2
@@ -76,6 +85,7 @@ dynb [options]
 -d | --domain "dyndns.example.com"        set the domain you want to update
 -u | --username "user42"                  depends on your selected update method and your provider
 -p | --password "SuperSecretPassword"     depends on your selected update method and your provider
+--link                                    links to your script at ~/.local/bin/dynb
 
 ##### examples #####
 dynb --ip-mode dualstack --update-method domrobot --domain dyndns.example.com --username user42 --password SuperSecretPassword
@@ -94,9 +104,10 @@ function getMainDomain() {
     )
 
   response=$(curl --silent  \
+      "$_interface_str" \
       --request POST $_INWX_JSON_API_URL \
-     --header "Content-Type: application/json" \
-     --data "$request" | jq ".resData.domains[] | select(inside(.domain=\"$_dyn_domain\"))"
+      --header "Content-Type: application/json" \
+      --data "$request" | jq ".resData.domains[] | select(inside(.domain=\"$_dyn_domain\"))"
     )
   _main_domain=$( echo "$response" | jq --raw-output '.domain'  )
 }
@@ -111,9 +122,10 @@ function fetchDNSRecords() {
     )
 
   response=$( curl --silent  \
+      "$_interface_str" \
       --request POST $_INWX_JSON_API_URL \
-     --header "Content-Type: application/json" \
-     --data "$request"
+      --header "Content-Type: application/json" \
+      --data "$request"
     )
 
   _dns_records=$( echo "$response" | jq '.resData.record[]' )
@@ -136,7 +148,7 @@ function getDNSIP() {
 # 2. param: IP check server address
 # result to stdout
 function getRemoteIP() {
-  curl --silent --ipv"${1}" --dns-servers 1.1.1.1 --location "${2}"
+  curl --silent "$_interface_str" --ipv"${1}" --dns-servers 1.1.1.1 --location "${2}"
 }
 
 # requires parameter
@@ -161,6 +173,7 @@ function updateRecord() {
     )
 
   response=$(curl --silent  \
+      "$_interface_str" \
       --request POST $_INWX_JSON_API_URL \
       --header "Content-Type: application/json" \
       --data "$request"
@@ -200,11 +213,11 @@ function dynupdate() {
 
   ## request ##
   if [[ $_serviceProvider == "dynv6" ]]; then
-    response=$(curl --silent "${dyndns_update_url}" )
+    response=$(curl "$_interface_str" --silent "${dyndns_update_url}" )
     #echo $dyndns_update_url
   fi
   if [[ $_serviceProvider == "inwx" ]]; then
-    response=$(curl --silent --user "$_username":"$_password" "${dyndns_update_url}" )
+    response=$(curl "$_interface_str" --silent --user "$_username":"$_password" "${dyndns_update_url}" )
   fi
 
   case $response in
@@ -366,6 +379,8 @@ function checkDependencies() {
 ## MAIN section ##
 ##################
 
+## parameters and checks
+
 FILE=$(dirname "$(realpath "$0")")/.env
 if test -f "$FILE"; then
   # shellcheck source=.env
@@ -379,6 +394,10 @@ fi
 
 checkDependencies
 
+if [[ $_network_interface != "" ]]; then
+  _interface_str="--interface $_network_interface"
+fi
+
 if [[ $_ip_mode == d* ]]; then
   _is_IPv4_enabled=true
   _is_IPv6_enabled=true
@@ -389,6 +408,8 @@ fi
 if [[ $_ip_mode == *6* ]]; then
   _is_IPv6_enabled=true
 fi
+
+## execute operations
 
 if [[ $_update_method == "domrobot" ]]; then
   getMainDomain
@@ -422,6 +443,7 @@ if [[ $_update_method == "dyndns" ]]; then
   fi
 fi
 
+unset _network_interface
 unset _DNS_checkServer
 unset _dns_records
 unset _dyn_domain
