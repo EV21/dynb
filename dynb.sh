@@ -251,6 +251,7 @@ function dynupdate() {
   DESEC_DYNDNS_UPDATE_URL="https://update.dedyn.io/?"
   DUCKDNS_DYNDNS_UPDATE_URL="https://www.duckdns.org/update?domains=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
   DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
+  NOIP_DYNDNS_UPDATE_URL="https://dynupdate.no-ip.com/nic/update?hostname=$DYNB_DYN_DOMAIN&"
 
   case $DYNB_SERVICE_PROVIDER in
     inwx* | INWX*)
@@ -258,6 +259,9 @@ function dynupdate() {
       ;;
     deSEC* | desec* | dedyn*)
       dyndns_update_url="${DESEC_DYNDNS_UPDATE_URL}"
+      ;;
+    noip* | no-ip*)
+      dyndns_update_url="$NOIP_DYNDNS_UPDATE_URL"
       ;;
     dynv6*)
       dyndns_update_url="${DYNV6_DYNDNS_UPDATE_URL}"
@@ -289,7 +293,7 @@ function dynupdate() {
 
   ## request ##
   case $DYNB_SERVICE_PROVIDER in
-    inwx* | INWX*)
+    inwx* | INWX* | noip* | no-ip*)
       _response=$(curl --silent "$_interface_str" \
         --user-agent "$_userAgent" \
         --user "$DYNB_USERNAME":"$DYNB_PASSWORD" \
@@ -310,6 +314,7 @@ function dynupdate() {
       )
       ;;
   esac
+
 
   case $_response in
     good* | OK* | "addresses updated")
