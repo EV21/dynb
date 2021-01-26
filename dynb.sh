@@ -214,10 +214,14 @@ function dynupdate() {
   myipv6_str=myipv6
 
   INWX_DYNDNS_UPDATE_URL="https://dyndns.inwx.com/nic/update?"
+  NOIP_DYNDNS_UPDATE_URL="https://dynupdate.no-ip.com/nic/update?hostname=$_dyn_domain&"
   DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$_dyn_domain&token=$_token&"
 
   if [[ $_serviceProvider == "inwx" ]]; then
     dyndns_update_url=$INWX_DYNDNS_UPDATE_URL
+  fi
+  if [[ $_serviceProvider == "noip" ]] || [[ $_serviceProvider == "no-ip" ]]; then
+    dyndns_update_url=$NOIP_DYNDNS_UPDATE_URL
   fi
   if [[ $_serviceProvider == "dynv6" ]]; then
     dyndns_update_url="${DYNV6_DYNDNS_UPDATE_URL}"
@@ -242,7 +246,7 @@ function dynupdate() {
         "${dyndns_update_url}"
       )
   fi
-  if [[ $_serviceProvider == "inwx" ]]; then
+  if [[ $_serviceProvider == "inwx" || $_serviceProvider == "noip" ]]; then
     _response=$(curl --silent "$_interface_str" \
       --user-agent "$_userAgent" \
       --user "$_username":"$_password" \
