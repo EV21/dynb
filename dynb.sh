@@ -6,8 +6,6 @@
 ## which accompanies this distribution, and is available at
 ## https://opensource.org/licenses/MIT
 
-_version=0.1.0
-
 ###################
 ## Configuration ##
 ###################
@@ -66,7 +64,10 @@ _counter=0
 _statusHostname=
 _statusUsername=
 _statusPassword=
+_version=0.0.1
 _userAgent="DynB/$_version github.com/EV21/dynb"
+_configFile=$HOME/.local/share/dynb/.env
+_statusFile=/tmp/dynb.status
 
 function echoerr() { printf "%s\n" "$*" >&2; }
 
@@ -101,7 +102,6 @@ Configuration options
 -u | --username "user42"                  depends on your selected update method and your provider
 -p | --password "SuperSecretPassword"     depends on your selected update method and your provider
 -t | --token "YourProviderGivenToken"     depends on your selected update method and your provider
-
 
 ##### examples #####
 dynb --ip-mode dual --update-method domrobot --domain dyndns.example.com --username user42 --password SuperSecretPassword
@@ -202,16 +202,15 @@ function updateRecord() {
 
 # using DynDNS2 protocol
 function dynupdate() {
-  myip_str=
-  myipv6_str=
+  # default parameter values
+  myip_str=myip
+  myipv6_str=myipv6
 
   INWX_DYNDNS_UPDATE_URL="https://dyndns.inwx.com/nic/update?"
   DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$_dyn_domain&token=$_token&"
 
   if [[ $_serviceProvider == "inwx" ]]; then
     dyndns_update_url=$INWX_DYNDNS_UPDATE_URL
-    myip_str=myip
-    myipv6_str=myipv6
   fi
   if [[ $_serviceProvider == "dynv6" ]]; then
     dyndns_update_url="${DYNV6_DYNDNS_UPDATE_URL}"
@@ -318,7 +317,7 @@ function checkStatus() {
         echoerr "Error: Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
         exit 1
       else
-        rm "$FILE_STATUS"
+        rm "$_statusFile"
       fi
       return
     ;;
@@ -327,25 +326,25 @@ function checkStatus() {
         echoerr "Error: Invalid username password combination."
         exit 1
       else
-        rm "$FILE_STATUS"
+        rm "$_statusFile"
       fi
       return
     ;;
     badagent )
       echoerr "Error: Client is deactivated by provider."
-      echo "Fix your config and then manually remove $FILE_STATUS to reset the client blockade"
+      echo "Fix your config and then manually remove $_statusFile to reset the client blockade"
       exit 1
       return
     ;;
     !donator )
       echoerr "Error: An update request was sent, including a feature that is not available to that particular user such as offline options."
-      echo "Fix your config and then manually remove $FILE_STATUS to reset the client blockade"
+      echo "Fix your config and then manually remove $_statusFile to reset the client blockade"
       exit 1
       return
     ;;
     abuse )
       echoerr "Error: Username is blocked due to abuse."
-      echo "Fix your config and then manually remove $FILE_STATUS to reset the client blockade"
+      echo "Fix your config and then manually remove $_statusFile to reset the client blockade"
       exit 1
       return
     ;;
@@ -355,7 +354,7 @@ function checkStatus() {
         echoerr "$_status: The provider currently has an fatal error. DynB will wait $(date --date=@$delta -u +%M) minutes for next update until 30 minutes have passed since last request"
         exit 1
       else
-        rm "$FILE_STATUS"
+        rm "$_statusFile"
       fi
       return
     ;;
@@ -415,7 +414,7 @@ function processParameters() {
         exit 0
         ;;
       -v | --version )
-        echo $_version
+        echo "$_version"
         exit 0
         ;;
       --link )
@@ -451,7 +450,7 @@ function processParameters() {
         shift 2
         ;;
       --reset )
-        rm --verbose "$FILE_STATUS"
+        rm --verbose "$_statusFile"
         exit 0
         ;;
       --)
@@ -481,97 +480,106 @@ function checkDependencies() {
   }
 }
 
+function doUnsets() {
+  unset _network_interface
+  unset _DNS_checkServer
+  unset _dns_records
+  unset _dyn_domain
+  unset _has_getopt
+  unset _help_message
+  unset _INWX_JSON_API_URL
+  unset _ip_mode
+  unset _ipv4_checker
+  unset _ipv6_checker
+  unset _is_IPv4_enabled
+  unset _is_IPv6_enabled
+  unset _main_domain
+  unset _new_IPv4
+  unset _new_IPv6
+  unset _password
+  unset _username
+  unset _serviceProvider
+  unset _version
+}
+
+function dynb() {
+  ## parameters and checks
+  checkDependencies
+
+  # shellcheck source=.env
+  if test -f "$_configFile"; then
+    # shellcheck disable=SC1091
+    source "$_configFile"
+  else
+    alternativeConfig="$(dirname "$(realpath "$0")")/.env"
+    if test -f "$alternativeConfig"; then
+      # shellcheck disable=SC1091
+      source "$alternativeConfig"
+    fi
+  fi
+  if test -f "$_statusFile"; then
+    # shellcheck disable=SC1090
+    source "$_statusFile"
+  fi
+
+  if [[ $_has_getopt == "" ]] && [[ $(uname) == Linux ]]; then
+    processParameters "$@"
+  fi
+
+  if [[ $_network_interface != "" ]]; then
+    _interface_str="--interface $_network_interface"
+  fi
+
+  if [[ $_ip_mode == d* ]]; then
+    _is_IPv4_enabled=true
+    _is_IPv6_enabled=true
+  fi
+  if [[ $_ip_mode == *4* ]]; then
+    _is_IPv4_enabled=true
+  fi
+  if [[ $_ip_mode == *6* ]]; then
+    _is_IPv6_enabled=true
+  fi
+
+  ## execute operations
+
+  if [[ $_update_method == "domrobot" ]]; then
+    getMainDomain
+    fetchDNSRecords
+    if [[ $_is_IPv4_enabled == true ]]; then
+      ipHasChanged 4
+      if [[ $? == 1 ]]; then
+        updateRecord 4
+      fi
+    fi
+    if [[ $_is_IPv6_enabled == true ]]; then
+      ipHasChanged 6
+      if [[ $? == 1 ]]; then
+        updateRecord 6
+      fi
+    fi
+  fi
+
+  if [[ $_update_method == "dyndns" ]]; then
+    changed=0
+    if [[ $_is_IPv4_enabled == true ]]; then
+      ipHasChanged 4
+      (( changed += $? ))
+    fi
+    if [[ $_is_IPv6_enabled == true ]]; then
+      ipHasChanged 6
+      (( changed += $? ))
+    fi
+    if [[ $changed -gt 0 ]]; then
+      dynupdate
+    fi
+  fi
+  doUnsets
+  return 0
+}
 ##################
 ## MAIN section ##
 ##################
 
-## parameters and checks
-
-FILE_CONFIG=$(dirname "$(realpath "$0")")/.env
-if test -f "$FILE_CONFIG"; then
-  # shellcheck source=.env
-  # shellcheck disable=SC1091
-  source "$FILE_CONFIG"
-fi
-FILE_STATUS=/tmp/dynb.status
-if test -f "$FILE_STATUS"; then
-  # shellcheck disable=SC1090
-  source "$FILE_STATUS"
-fi
-
-if [[ $_has_getopt == "" ]] && [[ $(uname) == Linux ]]; then
-  processParameters "$@"
-fi
-
-checkDependencies
-
-if [[ $_network_interface != "" ]]; then
-  _interface_str="--interface $_network_interface"
-fi
-
-if [[ $_ip_mode == d* ]]; then
-  _is_IPv4_enabled=true
-  _is_IPv6_enabled=true
-fi
-if [[ $_ip_mode == *4* ]]; then
-  _is_IPv4_enabled=true
-fi
-if [[ $_ip_mode == *6* ]]; then
-  _is_IPv6_enabled=true
-fi
-
-## execute operations
-
-if [[ $_update_method == "domrobot" ]]; then
-  getMainDomain
-  fetchDNSRecords
-  if [[ $_is_IPv4_enabled == true ]]; then
-    ipHasChanged 4
-    if [[ $? == 1 ]]; then
-      updateRecord 4
-    fi
-  fi
-  if [[ $_is_IPv6_enabled == true ]]; then
-    ipHasChanged 6
-    if [[ $? == 1 ]]; then
-      updateRecord 6
-    fi
-  fi
-fi
-
-if [[ $_update_method == "dyndns" ]]; then
-  changed=0
-  if [[ $_is_IPv4_enabled == true ]]; then
-    ipHasChanged 4
-    (( changed += $? ))
-  fi
-  if [[ $_is_IPv6_enabled == true ]]; then
-    ipHasChanged 6
-    (( changed += $? ))
-  fi
-  if [[ $changed -gt 0 ]]; then
-    dynupdate
-  fi
-fi
-
-unset _network_interface
-unset _DNS_checkServer
-unset _dns_records
-unset _dyn_domain
-unset _has_getopt
-unset _help_message
-unset _INWX_JSON_API_URL
-unset _ip_mode
-unset _ipv4_checker
-unset _ipv6_checker
-unset _is_IPv4_enabled
-unset _is_IPv6_enabled
-unset _main_domain
-unset _new_IPv4
-unset _new_IPv6
-unset _password
-unset _username
-unset _serviceProvider
-unset _version
-
-exit 0
+  dynb "${@}"
+  exit $?
