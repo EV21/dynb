@@ -40,6 +40,7 @@ TTL=300
 _ipv4_checker=api64.ipify.org
 _ipv6_checker=api64.ipify.org
 
+## An exernal DNS check server prevents wrong info from local DNS servers/resolvers
 _DNS_checkServer=1.1.1.1
 
 ## if you are actively using multiple network interfaces you might want to specify this
@@ -60,7 +61,8 @@ _is_IPv6_enabled=false
 _interface_str=
 _status=
 _eventTime=0
-_counter=0
+_errorCounter=0
+_response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
@@ -68,18 +70,7 @@ _version=0.0.1
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
-
-function echoerr() { printf "%s\n" "$*" >&2; }
-
-for i in curl jq date; do
-  if ! command -v $i >/dev/null 2>&1; then
-    echoerr "Error: could not find \"$i\", DynB depends on it. "
-    exit 1
-  fi
-done
-[[ -x $(command -v getopt 2> /dev/null) ]] || {
-  _has_getopt=false
-}
+_debug=1
 
 _help_message="$(cat << 'EOF'
 dynb - dynamic DNS update script for bash
@@ -109,6 +100,22 @@ dynb --ip-mode dual --update-method dyndns --service-provider inwx --domain dynd
 EOF
 )"
 
+function debugMode() {
+  if [[ $_debug -eq 1 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function debugMessage() {
+  if debugMode; then
+    echo "Debug: ${1}"
+  fi
+}
+
+function echoerr() { printf "%s\n" "$*" >&2; }
+
 # The main domain as an identifier for the dns zone is required for the updateRecord call
 function getMainDomain() {
   request=$( echo "{}" | \
@@ -117,14 +124,14 @@ function getMainDomain() {
       jq "(.params.pass=\"$_password\")"
     )
 
-  response=$(curl --silent  \
+  _response=$(curl --silent  \
       "$_interface_str" \
       --user-agent "$_userAgent" \
       --header "Content-Type: application/json" \
       --request POST $_INWX_JSON_API_URL \
       --data "$request" | jq ".resData.domains[] | select(inside(.domain=\"$_dyn_domain\"))"
     )
-  _main_domain=$( echo "$response" | jq --raw-output '.domain'  )
+  _main_domain=$( echo "$_response" | jq --raw-output '.domain'  )
 }
 
 function fetchDNSRecords() {
@@ -136,7 +143,7 @@ function fetchDNSRecords() {
       jq "(.params.name=\"$_dyn_domain\")"
     )
 
-  response=$( curl --silent  \
+  _response=$( curl --silent  \
       "$_interface_str" \
       --user-agent "$_userAgent" \
       --header "Content-Type: application/json" \
@@ -144,7 +151,7 @@ function fetchDNSRecords() {
       --data "$request"
     )
 
-  _dns_records=$( echo "$response" | jq '.resData.record[]' )
+  _dns_records=$( echo "$_response" | jq '.resData.record[]' )
 }
 
 # requires parameter A or AAAA
@@ -189,14 +196,14 @@ function updateRecord() {
       jq "(.params.ttl=\"$TTL\")"
     )
 
-  response=$(curl --silent  \
+  _response=$(curl --silent  \
       "$_interface_str" \
       --user-agent "$_userAgent" \
       --header "Content-Type: application/json" \
       --request POST $_INWX_JSON_API_URL \
       --data "$request"
      )
-     echo -e "$(echo "$response" | jq --raw-output '.msg')\n Domain: $_dyn_domain\n new IPv${1}: $IP"
+     echo -e "$(echo "$_response" | jq --raw-output '.msg')\n Domain: $_dyn_domain\n new IPv${1}: $IP"
   fi
 }
 
@@ -227,136 +234,155 @@ function dynupdate() {
   if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]; then
     dyndns_update_url="${dyndns_update_url}${myipv6_str}=${_new_IPv6}"
   fi
-
+  debugMessage "Update URL was: $dyndns_update_url"
   ## request ##
   if [[ $_serviceProvider == "dynv6" ]]; then
-    response=$(curl --silent "$_interface_str" \
+    _response=$(curl --silent "$_interface_str" \
         --user-agent "$_userAgent" \
         "${dyndns_update_url}"
       )
   fi
   if [[ $_serviceProvider == "inwx" ]]; then
-    response=$(curl --silent "$_interface_str" \
+    _response=$(curl --silent "$_interface_str" \
       --user-agent "$_userAgent" \
       --user "$_username":"$_password" \
       "${dyndns_update_url}" )
   fi
 
-  case $response in
+  case $_response in
     good* )
-      if [[ $response == "good 127.0.0.1" ]]; then
-        echoerr "Error: $response: Request ignored."
+      if [[ $_response == "good 127.0.0.1" ]]; then
+        echoerr "Error: $_response: Request ignored."
+        return 1
       else
-        echo "$response: The DynDNS update has been executed."
+        echo "$_response: The DynDNS update has been executed."
+        _errorCounter=0
+        return 0
       fi
-      return
     ;;
     nochg* )
-      echo "$response: Nothing has changed, IP addresses are still up to date."
-      return
+      echo "$_response: Nothing has changed, IP addresses are still up to date."
+      return 1
     ;;
     abuse )
-      echoerr "Error: $response: Username is blocked due to abuse."
-      return
+      echoerr "Error: $_response: Username is blocked due to abuse."
+      return 1
     ;;
-    badauth ) 
-      echoerr "Error: $response: Invalid username password combination."
-      return
+    badauth | 401 )
+      echoerr "Error: $_response: Invalid username password combination."
+      return 1
     ;;
     badagent )
-      echoerr "Error: $response: Client disabled. Something is very wrong!"
-      return
+      echoerr "Error: $_response: Client disabled. Something is very wrong!"
+      return 1
     ;;
     !donator )
-      echoerr "Error: $response: An update request was sent, including a feature that is not available to that particular user such as offline options."
-      return
+      echoerr "Error: $_response: An update request was sent, including a feature that is not available to that particular user such as offline options."
+      return 1
     ;;
     !yours )
-      echoerr "Error: $response: The domain does not belong to your user account"
-      return
+      echoerr "Error: $_response: The domain does not belong to your user account"
+      return 1
     ;;
     notfqdn )
-      echoerr "Error: $response: Hostname $_dyn_domain is invalid"
-      return
+      echoerr "Error: $_response: Hostname $_dyn_domain is invalid"
+      return 1
     ;;
     nohost )
-      echoerr "Error: $response: Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
-      return
+      echoerr "Error: $_response: Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
+      return 1
     ;;
     numhost )
-      echoerr "Error: $response: Too many hostnames have been specified for this update"
-      return
+      echoerr "Error: $_response: Too many hostnames have been specified for this update"
+      return 1
     ;;
     dnserr )
-      echoerr "Error: $response: There is an internal error in the dyndns update system"
-      return
+      echoerr "Error: $_response: There is an internal error in the dyndns update system. Retry update no sooner than 30 minutes."
+      return 1
     ;;
-    911 )
-      echoerr "Error: $response: A fatal error on provider side such as a database outage. Retry the update no sooner than 30 minutes."
-      return
+    911 | 5* )
+      echoerr "Error: $_response: A fatal error on provider side such as a database outage. Retry update no sooner than 30 minutes."
+      return 1
     ;;
     * )
-      echo "$response"
-      return
+      if [[ "$_response" == "$_status" ]]; then
+        echoerr "Error: An unknown response code has been received. $_response"
+        return 1
+      else
+        echoerr "Error: unknown respnse code: $_response"
+        return 0
+      fi
     ;;
   esac
-  if [[ $response != good ]]; then
-    setStatus "$response" "$(date +%s)" $(( _counter += 1 )) "$_dyn_domain" "${_username}${_token}"
-  fi
 }
 
 function setStatus() {
-  echo "_status=$1; _eventTime=$2; _counter=$3; _statusHostname=$4; _statusUsername=$5; _statusPassword=$6" > /tmp/dynb.status
+  echo "_status=$1; _eventTime=$2; _errorCounter=$3; _statusHostname=$4; _statusUsername=$5; _statusPassword=$6" > /tmp/dynb.status
 }
 
 # handle errors from past update requests
 function checkStatus() {
   case $_status in
-    nohost )
+    nochg* )
+      if [[ _errorCounter -gt 1 ]]; then
+        echoerr "Error: The update client was spamming unnecessary update requests, something might be wrong with your IP-Check site."
+        echoerr "Fix your config an then delete $_statusFile"
+        return 1
+      fi
+    ;;
+    nohost | !yours )
       if [[ "$_statusHostname" == "$_dyn_domain" && ( "$_statusUsername" == "$_username" || $_statusUsername == "$_token" ) ]]; then
         echoerr "Error: Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
-        exit 1
+        return 1
       else
         rm "$_statusFile"
       fi
-      return
+      return 0
     ;;
-    badauth )
+    badauth | 401 )
       if [[ "$_statusUsername" == "$_username" && "$_statusPassword" == "$_password" ]]; then
         echoerr "Error: Invalid username password combination."
-        exit 1
+        return 1
       else
         rm "$_statusFile"
       fi
-      return
+      return 0
     ;;
     badagent )
       echoerr "Error: Client is deactivated by provider."
-      echo "Fix your config and then manually remove $_statusFile to reset the client blockade"
-      exit 1
-      return
+      echo "Fix your config and then manually remove $_statusFile to reset the client blockade."
+      echo "If it still fails file an issue at github or try another client :)"
+      return 1
     ;;
     !donator )
       echoerr "Error: An update request was sent, including a feature that is not available to that particular user such as offline options."
       echo "Fix your config and then manually remove $_statusFile to reset the client blockade"
-      exit 1
-      return
+      echo "If it still fails file an issue at github or try another client :)"
+      return 1
     ;;
     abuse )
       echoerr "Error: Username is blocked due to abuse."
       echo "Fix your config and then manually remove $_statusFile to reset the client blockade"
-      exit 1
-      return
+      echo "If it still fails file an issue at github or try another client :)"
+      return 1
     ;;
-    911 )
+    911 | 5* )
       delta=$(( $(date +%s) - _eventTime ))
       if [[ $delta -lt 1800 ]]; then
-        echoerr "$_status: The provider currently has an fatal error. DynB will wait $(date --date=@$delta -u +%M) minutes for next update until 30 minutes have passed since last request"
-        exit 1
+        echoerr "$_status: The provider currently has an fatal error. DynB will wait for next update until 30 minutes have passed since last request, $(date --date=@$delta -u +%M) minutes already passed."
+        return 1
       else
         rm "$_statusFile"
       fi
-      return
+      return 0
+    ;;
+    * )
+      if [[ _errorCounter -gt 1 ]]; then
+        echoerr "Error: An unknown response code has repeatedly been received. $_response"
+        return 1
+      else
+        return 0
+      fi
     ;;
   esac
 }
@@ -381,16 +407,17 @@ function ipHasChanged() {
     fi
   fi
 
+  if [[ ${1} == 4 ]]; then
+    _new_IPv4=$remote_ip
+    #echo "New IPv4: $_new_IPv4 old was: $dns_ip"
+  else
+    _new_IPv6=$remote_ip
+    #echo "New IPv6: $_new_IPv6 old was: $dns_ip"
+  fi
+
   if [[ "$remote_ip" == "$dns_ip" ]]; then
     return 0
   else
-    if [[ ${1} == 4 ]]; then
-      _new_IPv4=$remote_ip
-      #echo "New IPv4: $_new_IPv4 old was: $dns_ip"
-    else
-      _new_IPv6=$remote_ip
-      #echo "New IPv6: $_new_IPv6 old was: $dns_ip"
-    fi
     return 1
   fi
 }
@@ -465,16 +492,20 @@ function processParameters() {
 ##################
 
 function checkDependencies() {
-  [[ -x $(command -v curl 2> /dev/null) ]] || {
-    echo "This script depends on curl and it is not available." >&2
-    exit 1
-  }
+  ## If there will be more general dependencies use a loop
+  # for i in curl and some other stuff; do
+  #   if ! command -v $i >/dev/null 2>&1; then
+  #     echoerr "Error: could not find \"$i\", DynB depends on it. "
+  #     exit 1
+  #   fi
+  # done
   [[ -x $(command -v jq 2> /dev/null) ]] || {
     if [[ $_update_method != dyndns* ]]; then
       echo "This script depends on jq and it is not available." >&2
       exit 1
     fi
   }
+  # maybe replace this with matejak/argbash
   [[ -x $(command -v getopt 2> /dev/null) ]] || {
     _has_getopt=false
   }
@@ -502,6 +533,9 @@ function doUnsets() {
   unset _version
 }
 
+#################
+## MAIN method ##
+#################
 function dynb() {
   ## parameters and checks
   checkDependencies
@@ -518,6 +552,7 @@ function dynb() {
     fi
   fi
   if test -f "$_statusFile"; then
+    debugMessage "read previous status file"
     # shellcheck disable=SC1090
     source "$_statusFile"
   fi
@@ -571,15 +606,25 @@ function dynb() {
       (( changed += $? ))
     fi
     if [[ $changed -gt 0 ]]; then
-      dynupdate
+      if checkStatus; then
+        debugMessage "checkStatus has no errors"
+        if dynupdate; then
+          debugMessage "DynDNS2 update success"
+        else
+          debugMessage "Save new status after dynupdate has failed"
+          setStatus "$_response" "$(date +%s)" $(( _errorCounter += 1 )) "$_dyn_domain" "${_username}${_token}"
+        fi
+      else
+        debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
+      fi
     fi
   fi
   doUnsets
   return 0
 }
-##################
-## MAIN section ##
-##################
+######################
+## END MAIN section ##
+######################
 
   dynb "${@}"
   exit $?
