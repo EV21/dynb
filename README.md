@@ -31,13 +31,9 @@ The following update methods are currently implemented:
 
 * `curl` - The minimum requirement for running DynDNS2 operations
 
-essential for APIs:
+also essential if you are using other APIs:
 
 * `jq` - Command-line JSON processor
-
-optional requirement:
-
-* `getopt` for CLI parameter handling from [util-linux](https://pkgs.org/download/util-linux)
 
 ## 🚀 Installation
 
@@ -57,7 +53,7 @@ This convenience function only works if `util-linux` is installed on your system
 ## ⚙ Configuration
 
 You can use a config in form of an `.env` file.
-Or if your system meets the relevant requirements you can use CLI parameters.
+Or you can just use CLI parameters.
 
 Create `.env` in the app root directory or at `~/.local/share/dynb/.env`.
 ```
