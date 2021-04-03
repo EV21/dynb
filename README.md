@@ -18,7 +18,7 @@ The following update methods are currently implemented:
 
 ### APIs
 
-* INWX.com JSON-RPC-API  
+* INWX.com Domrobot JSON-RPC-API  
   Limitations:
   - minimum TTL is 300 (5 minutes)
 

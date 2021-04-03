@@ -5,6 +5,10 @@
 
 ### New
 
+* :sparkles: add completion. [Eduard Veit]
+
+  :sparkles: add man page
+
 * :sparkles: replace getopt with argbash. [Eduard Veit]
 
 * :sparkles: add interpretaton of status codes and act accordingly. [Eduard Veit]
