@@ -25,8 +25,9 @@ The following update methods are currently implemented:
 ### DynDNS2
 
 * INWX.com  
-* dynv6.com
-* deSEC.io (dedyn.io)
+* deSEC.io (dedyn.io)  
+* DuckDNS.org  
+* dynv6.com  
 
 ## 📦 Requirements
 
@@ -49,7 +50,6 @@ If you want to add the script to you PATH, run :point_down:
 ```
 bash dynb.sh --link
 ```
-This convenience function only works if `util-linux` is installed on your system.
 
 ## ⚙ Configuration
 
