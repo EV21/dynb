@@ -26,6 +26,7 @@ The following update methods are currently implemented:
 
 * INWX.com  
 * dynv6.com
+* deSEC.io (dedyn.io)
 
 ## 📦 Requirements
 

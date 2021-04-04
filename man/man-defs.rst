@@ -22,7 +22,7 @@
 
 .. |OPTION_DOMAIN| replace:: dyndns.example.com
 
-.. |OPTION_SERVICE_PROVIDER| replace:: inwx | dynv6
+.. |OPTION_SERVICE_PROVIDER| replace:: inwx | dynv6 | deSEC
 
 .. |OPTION_USERNAME| replace:: e.g. user42
 

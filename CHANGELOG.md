@@ -5,6 +5,8 @@
 
 ### New
 
+* :sparkles: add support for deSEC as DynDNS2 provider. [Eduard Veit]
+
 * :sparkles: add completion. [Eduard Veit]
 
   :sparkles: add man page

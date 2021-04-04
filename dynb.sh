@@ -69,7 +69,7 @@ _version=0.0.1
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
-_debug=1
+_debug=0
 
 # Created by argbash-init v2.10.0
 # Rearrange the order of options below according to what you would like to see in the help message.
@@ -325,7 +325,7 @@ function debugMode() {
 
 function debugMessage() {
   if debugMode; then
-    echo "Debug: ${1}"
+    echo "Debug: $*"
   fi
 }
 
@@ -429,17 +429,28 @@ function dynupdate() {
   myipv6_str=myipv6
 
   INWX_DYNDNS_UPDATE_URL="https://dyndns.inwx.com/nic/update?"
+  DESEC_DYNDNS_UPDATE_URL="https://update.dedyn.io/?"
   DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$_dyn_domain&token=$_token&"
 
-  if [[ $_serviceProvider == "inwx" ]]; then
-    dyndns_update_url=$INWX_DYNDNS_UPDATE_URL
-  fi
-  if [[ $_serviceProvider == "dynv6" ]]; then
-    dyndns_update_url="${DYNV6_DYNDNS_UPDATE_URL}"
-    myip_str=ipv4
-    myipv6_str=ipv6
-  fi
+  case $_serviceProvider in
+    inwx | INWX )
+      dyndns_update_url=$INWX_DYNDNS_UPDATE_URL
+    ;;
+    deSEC | desec* | dedyn* )
+      dyndns_update_url="${DESEC_DYNDNS_UPDATE_URL}"
+    ;;
+    dynv6 )
+      dyndns_update_url="${DYNV6_DYNDNS_UPDATE_URL}"
+      myip_str=ipv4
+      myipv6_str=ipv6
+    ;;
+    * )
+    echoerr "$_serviceProvider is not supported"
+    exit 1
+    ;;
+  esac
 
+  # pre encode ip parameters
   if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]; then
     dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}&${myipv6_str}=${_new_IPv6}"
   fi
@@ -450,19 +461,29 @@ function dynupdate() {
     dyndns_update_url="${dyndns_update_url}${myipv6_str}=${_new_IPv6}"
   fi
   debugMessage "Update URL was: $dyndns_update_url"
+
   ## request ##
-  if [[ $_serviceProvider == "dynv6" ]]; then
-    _response=$(curl --silent "$_interface_str" \
-        --user-agent "$_userAgent" \
-        "${dyndns_update_url}"
-      )
-  fi
-  if [[ $_serviceProvider == "inwx" ]]; then
-    _response=$(curl --silent "$_interface_str" \
+  case $_serviceProvider in
+    inwx | INWX )
+      _response=$(curl --silent "$_interface_str" \
       --user-agent "$_userAgent" \
       --user "$_username":"$_password" \
       "${dyndns_update_url}" )
-  fi
+    ;;
+    deSEC | desec* | dedyn* )
+      _response=$(curl --silent "$_interface_str" \
+      --user-agent "$_userAgent" \
+      --header "Authorization: Token $_token" \
+      --get --data-urlencode "hostname=$_dyn_domain" \
+      "${dyndns_update_url}" )
+    ;;
+    dynv6 )
+      _response=$(curl --silent "$_interface_str" \
+        --user-agent "$_userAgent" \
+        "${dyndns_update_url}"
+      )
+    ;;
+  esac
 
   case $_response in
     good* )
@@ -654,6 +675,9 @@ function handleParameters() {
     rm --verbose "$_statusFile"
     exit 0
   fi
+    if [[ $_arg_debug == "on" ]]; then
+    _debug=1
+  fi
   if [[ $_arg_update_method != "" ]]; then
     _update_method=$_arg_update_method
   fi
@@ -792,16 +816,18 @@ function dynb() {
     fi
     if [[ $changed -gt 0 ]]; then
       if checkStatus; then
-        debugMessage "checkStatus has no errors"
+        debugMessage "checkStatus has no errors, try update"
         if dynupdate; then
           debugMessage "DynDNS2 update success"
         else
           debugMessage "Save new status after dynupdate has failed"
-          setStatus "$_response" "$(date +%s)" $(( _errorCounter += 1 )) "$_dyn_domain" "${_username}${_token}"
+          setStatus "$_response" "$(date +%s)" $(( _errorCounter += 1 )) "$_dyn_domain" "${_username}" "${_password}${_token}"
         fi
       else
         debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
       fi
+    else
+      debugMessage "Skip DynDNS2 update, IPs are up to date"
     fi
   fi
   doUnsets
