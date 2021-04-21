@@ -5,6 +5,8 @@
 
 ### New
 
+* :sparkles: add loop mode. [Eduard Veit]
+
 * :sparkles: add support for Duck DNS as DynDNS2 provider. [Eduard Veit]
 
 * :sparkles: add support for deSEC as DynDNS2 provider. [Eduard Veit]
@@ -33,6 +35,8 @@
 
 ### Documentation
 
+* :memo: update example of .env in README.md. [Eduard Veit]
+
 * :memo: add CHANGELOG.md. [Eduard Veit]
 
 * :memo: add example.env. [Eduard Veit]
@@ -40,6 +44,8 @@
 * :memo: write README.md. [Eduard Veit]
 
 ### Other
+
+* :recycle: refactor: rename environment variables. [Eduard Veit]
 
 * :recycle: refactor, fix and debug error handling. [Eduard Veit]
 

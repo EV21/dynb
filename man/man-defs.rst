@@ -30,4 +30,6 @@
 
 .. |OPTION_TOKEN| replace:: YourProviderGivenToken
 
+.. |OPTION_INTERVAL| replace:: \
+
 .. |OPTION_HELP| replace:: \

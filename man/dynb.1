@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH MAN 1 "2021-04-03" "" ""
+.TH MAN 1 "2021-04-21" "" ""
 .SH NAME
 man \- DynB - dynamic DNS update script for bash
 .
@@ -32,7 +32,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .SH SYNOPSIS
 .sp
-\fBman  [\-\-version] [\-\-link] [\-\-reset] [\-\-debug] [\-\-update\-method UPDATE\-METHOD] [\-\-ip\-mode IP\-MODE] [\-\-domain DOMAIN] [\-\-service\-provider SERVICE\-PROVIDER] [\-\-username USERNAME] [\-\-password PASSWORD] [\-\-token TOKEN] [\-\-help]\fP
+\fBman  [\-\-version] [\-\-link] [\-\-reset] [\-\-debug] [\-\-update\-method UPDATE\-METHOD] [\-\-ip\-mode IP\-MODE] [\-\-domain DOMAIN] [\-\-service\-provider SERVICE\-PROVIDER] [\-\-username USERNAME] [\-\-password PASSWORD] [\-\-token TOKEN] [\-\-interval INTERVAL] [\-\-help]\fP
 .SH DESCRIPTION
 .sp
 IPv4 (A) and IPv6 (AAAA) record updates are supported.
@@ -97,6 +97,11 @@ e.g. SuperSecretPassword
 depends on your selected update method and your provider.
 .sp
 YourProviderGivenToken
+.TP
+.BI \-\-interval \ INTERVAL
+choose the seconds interval to run the script in a loop, minimum is 60.
+.sp
+
 .TP
 .B \-h\fP,\fB  \-\-help
 Prints help.

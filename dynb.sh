@@ -10,23 +10,23 @@
 ## Configuration ##
 ###################
 
-DYNB_DYN_DOMAIN=
+#DYNB_DYN_DOMAIN=
 
 ## service provider could be deSEC, duckdns, dynv6, inwx
-DYNB_SERVICE_PROVIDER=
+#DYNB_SERVICE_PROVIDER=
 
 ## update method options: domrobot, dyndns
-DYNB_UPDATE_METHOD=
+#DYNB_UPDATE_METHOD=
 
 ## ip mode could be either: 4, 6 or dual for dualstack
-DYNB_IP_MODE=
+#DYNB_IP_MODE=
 
 ## If you are using the DomRobot RPC-API enter your credentials for the web interface login here
 ## If you are using the DynDNS2 protocol enter your credentials here
-DYNB_USERNAME=
-DYNB_PASSWORD=
+#DYNB_USERNAME=
+#DYNB_PASSWORD=
 ## or use a token
-DYNB_TOKEN=
+#DYNB_TOKEN=
 
 ## TTL (time to live) for the DNS record
 ## This setting is only relevant for API based record updates (not DnyDNS2!)
@@ -36,7 +36,7 @@ TTL=300
 ## The IP-Check sites (some sites have different urls for v4 and v6)
 ## Pro tip: use your own ip check server for privacy
 ## it could be as simple as that...
-## create an index.php with <?php echo $_SERVER['REMOTE_ADDR']; ?>
+## create an index.php with <?php echo $_SERVER'REMOTE_ADDR'; ?>
 _ipv4_checker=api64.ipify.org
 _ipv6_checker=api64.ipify.org
 
@@ -65,11 +65,13 @@ _response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
-_version=0.0.1
+_version=0.1.0
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
 _debug=0
+_minimum_looptime=60
+_loopMode=0
 
 # Created by argbash-init v2.10.0
 # Rearrange the order of options below according to what you would like to see in the help message.
@@ -84,6 +86,7 @@ _debug=0
 # ARG_OPTIONAL_SINGLE([username],[u],[depends on your selected update method and your provider],[])
 # ARG_OPTIONAL_SINGLE([password],[p],[depends on your selected update method and your provider],[])
 # ARG_OPTIONAL_SINGLE([token],[t],[depends on your selected update method and your provider],[])
+# ARG_OPTIONAL_SINGLE([interval],[],[choose the seconds interval to run the script in a loop, minimum is 60],[])
 # ARG_HELP([DynB - dynamic DNS update script for bash])
 # ARGBASH_GO()
 # needed because of Argbash --> m4_ignore([
@@ -120,12 +123,13 @@ _arg_service_provider=
 _arg_username=
 _arg_password=
 _arg_token=
+_arg_interval=
 
 
 print_help()
 {
 	printf '%s\n' "DynB - dynamic DNS update script for bash"
-	printf 'Usage: %s [-v|--(no-)version] [-l|--(no-)link] [-r|--(no-)reset] [--(no-)debug] [-m|--update-method <arg>] [-i|--ip-mode <arg>] [-d|--domain <arg>] [-s|--service-provider <arg>] [-u|--username <arg>] [-p|--password <arg>] [-t|--token <arg>] [-h|--help]\n' "$0"
+	printf 'Usage: %s [-v|--(no-)version] [-l|--(no-)link] [-r|--(no-)reset] [--(no-)debug] [-m|--update-method <arg>] [-i|--ip-mode <arg>] [-d|--domain <arg>] [-s|--service-provider <arg>] [-u|--username <arg>] [-p|--password <arg>] [-t|--token <arg>] [--interval <arg>] [-h|--help]\n' "$0"
 	printf '\t%s\n' "-v, --version, --no-version: outputs the client version (off by default)"
 	printf '\t%s\n' "-l, --link, --no-link: links to your script at ~/.local/bin/dynb (off by default)"
 	printf '\t%s\n' "-r, --reset, --no-reset: deletes the client blocking status file (off by default)"
@@ -137,6 +141,7 @@ print_help()
 	printf '\t%s\n' "-u, --username: depends on your selected update method and your provider (no default)"
 	printf '\t%s\n' "-p, --password: depends on your selected update method and your provider (no default)"
 	printf '\t%s\n' "-t, --token: depends on your selected update method and your provider (no default)"
+	printf '\t%s\n' "--interval: choose the seconds interval to run the script in a loop, minimum is 60 (no default)"
 	printf '\t%s\n' "-h, --help: Prints help"
 }
 
@@ -264,6 +269,14 @@ parse_commandline()
 			-t*)
 				_arg_token="${_key##-t}"
 				;;
+			--interval)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_interval="$2"
+				shift
+				;;
+			--interval=*)
+				_arg_interval="${_key##--interval=}"
+				;;
 			-h|--help)
 				print_help
 				exit 0
@@ -315,6 +328,14 @@ dynb --ip-mode dual --update-method domrobot --domain dyndns.example.com --usern
 dynb --ip-mode dual --update-method dyndns --service-provider inwx --domain dyndns.example.com --username user42 --password SuperSecretPassword
 EOF
 )"
+
+function loopMode() {
+  if [[ $_loopMode -eq 1 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
 
 function debugMode() {
   if [[ $_debug -eq 1 ]]; then
@@ -493,7 +514,7 @@ function dynupdate() {
   esac
 
   case $_response in
-    good* | OK* )
+    good* | OK* | "addresses updated" )
       if [[ $_response == "good 127.0.0.1" ]]; then
         echoerr "Error: $_response: Request ignored."
         return 1
@@ -706,6 +727,36 @@ function handleParameters() {
   if [[ $_arg_token != "" ]]; then
     DYNB_TOKEN=$_arg_token
   fi
+  if [[ $_arg_interval != "" ]]; then
+    DYNB_INTERVAL=$_arg_interval
+  fi
+
+  if [[ -z $DYNB_INTERVAL ]]; then
+    _loopMode=0
+  elif [[ $DYNB_INTERVAL -lt _minimum_looptime ]]; then
+    DYNB_INTERVAL=$_minimum_looptime
+    _loopMode=1
+  else
+    _loopMode=1
+  fi
+    if [[ $_network_interface != "" ]]; then
+    _interface_str="--interface $_network_interface"
+  fi
+
+  if [[ $DYNB_IP_MODE == d* ]]; then
+    _is_IPv4_enabled=true
+    _is_IPv6_enabled=true
+  fi
+  if [[ $DYNB_IP_MODE == *4* ]]; then
+    _is_IPv4_enabled=true
+  fi
+  if [[ $DYNB_IP_MODE == *6* ]]; then
+    _is_IPv6_enabled=true
+  fi
+
+  if [[ $DYNB_DEBUG == true ]]; then
+    _debug=1
+  fi
   return 0
 }
 
@@ -751,49 +802,7 @@ function doUnsets() {
   unset _version
 }
 
-#################
-## MAIN method ##
-#################
-function dynb() {
-  ## parameters and checks
-  checkDependencies
-
-  # shellcheck source=.env
-  if test -f "$_configFile"; then
-    # shellcheck disable=SC1091
-    source "$_configFile"
-  else
-    alternativeConfig="$(dirname "$(realpath "$0")")/.env"
-    if test -f "$alternativeConfig"; then
-      # shellcheck disable=SC1091
-      source "$alternativeConfig"
-    fi
-  fi
-  if test -f "$_statusFile"; then
-    debugMessage "read previous status file"
-    # shellcheck disable=SC1090
-    source "$_statusFile"
-  fi
-
-  handleParameters
-
-  if [[ $_network_interface != "" ]]; then
-    _interface_str="--interface $_network_interface"
-  fi
-
-  if [[ $DYNB_IP_MODE == d* ]]; then
-    _is_IPv4_enabled=true
-    _is_IPv6_enabled=true
-  fi
-  if [[ $DYNB_IP_MODE == *4* ]]; then
-    _is_IPv4_enabled=true
-  fi
-  if [[ $DYNB_IP_MODE == *6* ]]; then
-    _is_IPv6_enabled=true
-  fi
-
-  ## execute operations
-
+function doUpdates() {
   if [[ $DYNB_UPDATE_METHOD == "domrobot" ]]; then
     getMainDomain
     fetchDNSRecords
@@ -801,12 +810,16 @@ function dynb() {
       ipHasChanged 4
       if [[ $? == 1 ]]; then
         updateRecord 4
+      else
+        debugMessage "Skip IPv4 record update, it is already up to date"
       fi
     fi
     if [[ $_is_IPv6_enabled == true ]]; then
       ipHasChanged 6
       if [[ $? == 1 ]]; then
         updateRecord 6
+      else
+        debugMessage "Skip IPv6 record update, it is already up to date"
       fi
     fi
   fi
@@ -837,6 +850,47 @@ function dynb() {
       debugMessage "Skip DynDNS2 update, IPs are up to date"
     fi
   fi
+}
+
+#################
+## MAIN method ##
+#################
+function dynb() {
+  ## parameters and checks
+  checkDependencies
+
+  # shellcheck source=.env
+  if test -f "$_configFile"; then
+    # shellcheck disable=SC1091
+    source "$_configFile"
+  else
+    alternativeConfig="$(dirname "$(realpath "$0")")/.env"
+    if test -f "$alternativeConfig"; then
+      # shellcheck disable=SC1091
+      source "$alternativeConfig"
+    fi
+  fi
+  if test -f "$_statusFile"; then
+    debugMessage "read previous status file"
+    # shellcheck disable=SC1090
+    source "$_statusFile"
+  fi
+
+  handleParameters
+
+  ## execute operations
+
+
+  if loopMode; then
+    while checkStatus
+    do
+      doUpdates
+      sleep $DYNB_INTERVAL
+    done
+  else
+    doUpdates
+  fi
+
   doUnsets
   return 0
 }

@@ -11,7 +11,7 @@ DynB - dynamic DNS update script for bash
 -----------------------------------------
 
 :Author: |AUTHOR|
-:Date:   2021-04-03
+:Date:   2021-04-21
 :Version: |VERSION|
 :Manual section: |MAN_SECTION|
 
@@ -19,7 +19,7 @@ DynB - dynamic DNS update script for bash
 SYNOPSIS
 ========
 
-``man  [--version] [--link] [--reset] [--debug] [--update-method UPDATE-METHOD] [--ip-mode IP-MODE] [--domain DOMAIN] [--service-provider SERVICE-PROVIDER] [--username USERNAME] [--password PASSWORD] [--token TOKEN] [--help]``
+``man  [--version] [--link] [--reset] [--debug] [--update-method UPDATE-METHOD] [--ip-mode IP-MODE] [--domain DOMAIN] [--service-provider SERVICE-PROVIDER] [--username USERNAME] [--password PASSWORD] [--token TOKEN] [--interval INTERVAL] [--help]``
 
 
 DESCRIPTION
@@ -78,6 +78,10 @@ ARGUMENTS
 -t TOKEN, --token TOKEN                                   depends on your selected update method and your provider.
 
                                                           |OPTION_TOKEN|
+
+--interval INTERVAL                                       choose the seconds interval to run the script in a loop, minimum is 60.
+
+                                                          |OPTION_INTERVAL|
 
 -h, --help                                                Prints help.
 
