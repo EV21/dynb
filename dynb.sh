@@ -10,27 +10,27 @@
 ## Configuration ##
 ###################
 
-_dyn_domain=
+DYNB_DYN_DOMAIN=
 
 ## service provider could be deSEC, duckdns, dynv6, inwx
-_serviceProvider=
+DYNB_SERVICE_PROVIDER=
 
 ## update method options: domrobot, dyndns
-_update_method=
+DYNB_UPDATE_METHOD=
 
 ## ip mode could be either: 4, 6 or dual for dualstack
-_ip_mode=
+DYNB_IP_MODE=
 
 ## If you are using the DomRobot RPC-API enter your credentials for the web interface login here
 ## If you are using the DynDNS2 protocol enter your credentials here
-_username=
-_password=
+DYNB_USERNAME=
+DYNB_PASSWORD=
 ## or use a token
-_token=
+DYNB_TOKEN=
 
- ## TTL (time to live) for the DNS record
- ## This setting is only relevant for API based record updates (not DnyDNS2!)
- ## minimum allowed TTL value by inwx is 300 (5 minutes)
+## TTL (time to live) for the DNS record
+## This setting is only relevant for API based record updates (not DnyDNS2!)
+## minimum allowed TTL value by inwx is 300 (5 minutes)
 TTL=300
 
 ## The IP-Check sites (some sites have different urls for v4 and v6)
@@ -336,8 +336,8 @@ function echoerr() { printf "%s\n" "$*" >&2; }
 function getMainDomain() {
   request=$( echo "{}" | \
       jq '(.method="nameserver.list")' | \
-      jq "(.params.user=\"$_username\")" | \
-      jq "(.params.pass=\"$_password\")"
+      jq "(.params.user=\"$DYNB_USERNAME\")" | \
+      jq "(.params.pass=\"$DYNB_PASSWORD\")"
     )
 
   _response=$(curl --silent  \
@@ -345,7 +345,7 @@ function getMainDomain() {
       --user-agent "$_userAgent" \
       --header "Content-Type: application/json" \
       --request POST $_INWX_JSON_API_URL \
-      --data "$request" | jq ".resData.domains[] | select(inside(.domain=\"$_dyn_domain\"))"
+      --data "$request" | jq ".resData.domains[] | select(inside(.domain=\"$DYNB_DYN_DOMAIN\"))"
     )
   _main_domain=$( echo "$_response" | jq --raw-output '.domain'  )
 }
@@ -353,10 +353,10 @@ function getMainDomain() {
 function fetchDNSRecords() {
   request=$( echo "{}" | \
       jq '(.method="'nameserver.info'")' | \
-      jq "(.params.user=\"$_username\")" | \
-      jq "(.params.pass=\"$_password\")" | \
+      jq "(.params.user=\"$DYNB_USERNAME\")" | \
+      jq "(.params.pass=\"$DYNB_PASSWORD\")" | \
       jq "(.params.domain=\"$_main_domain\")" | \
-      jq "(.params.name=\"$_dyn_domain\")"
+      jq "(.params.name=\"$DYNB_DYN_DOMAIN\")"
     )
 
   _response=$( curl --silent  \
@@ -405,8 +405,8 @@ function updateRecord() {
   if [[ $IP != "" ]]; then
   request=$( echo "{}" | \
       jq '(.method="nameserver.updateRecord")' | \
-      jq "(.params.user=\"$_username\")" | \
-      jq "(.params.pass=\"$_password\")" | \
+      jq "(.params.user=\"$DYNB_USERNAME\")" | \
+      jq "(.params.pass=\"$DYNB_PASSWORD\")" | \
       jq "(.params.id=\"$ID\")" | \
       jq "(.params.content=\"$IP\")" | \
       jq "(.params.ttl=\"$TTL\")"
@@ -419,7 +419,7 @@ function updateRecord() {
       --request POST $_INWX_JSON_API_URL \
       --data "$request"
      )
-     echo -e "$(echo "$_response" | jq --raw-output '.msg')\n Domain: $_dyn_domain\n new IPv${1}: $IP"
+     echo -e "$(echo "$_response" | jq --raw-output '.msg')\n Domain: $DYNB_DYN_DOMAIN\n new IPv${1}: $IP"
   fi
 }
 
@@ -431,10 +431,10 @@ function dynupdate() {
 
   INWX_DYNDNS_UPDATE_URL="https://dyndns.inwx.com/nic/update?"
   DESEC_DYNDNS_UPDATE_URL="https://update.dedyn.io/?"
-  DUCKDNS_DYNDNS_UPDATE_URL="https://www.duckdns.org/update?domains=$_dyn_domain&token=$_token&"
-  DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$_dyn_domain&token=$_token&"
+  DUCKDNS_DYNDNS_UPDATE_URL="https://www.duckdns.org/update?domains=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
+  DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
 
-  case $_serviceProvider in
+  case $DYNB_SERVICE_PROVIDER in
     inwx* | INWX* )
       dyndns_update_url=$INWX_DYNDNS_UPDATE_URL
     ;;
@@ -452,7 +452,7 @@ function dynupdate() {
       myipv6_str=ipv6
     ;;
     * )
-    echoerr "$_serviceProvider is not supported"
+    echoerr "$DYNB_SERVICE_PROVIDER is not supported"
     exit 1
     ;;
   esac
@@ -470,18 +470,18 @@ function dynupdate() {
   debugMessage "Update URL was: $dyndns_update_url"
 
   ## request ##
-  case $_serviceProvider in
+  case $DYNB_SERVICE_PROVIDER in
     inwx* | INWX* )
       _response=$(curl --silent "$_interface_str" \
       --user-agent "$_userAgent" \
-      --user "$_username":"$_password" \
+      --user "$DYNB_USERNAME":"$DYNB_PASSWORD" \
       "${dyndns_update_url}" )
     ;;
     deSEC* | desec* | dedyn* )
       _response=$(curl --silent "$_interface_str" \
       --user-agent "$_userAgent" \
-      --header "Authorization: Token $_token" \
-      --get --data-urlencode "hostname=$_dyn_domain" \
+      --header "Authorization: Token $DYNB_TOKEN" \
+      --get --data-urlencode "hostname=$DYNB_DYN_DOMAIN" \
       "${dyndns_update_url}" )
     ;;
     dynv6* | duckDNS* | duckdns* )
@@ -528,7 +528,7 @@ function dynupdate() {
       return 1
     ;;
     notfqdn )
-      echoerr "Error: $_response: Hostname $_dyn_domain is invalid"
+      echoerr "Error: $_response: Hostname $DYNB_DYN_DOMAIN is invalid"
       return 1
     ;;
     nohost )
@@ -574,7 +574,7 @@ function checkStatus() {
       fi
     ;;
     nohost | !yours )
-      if [[ "$_statusHostname" == "$_dyn_domain" && ( "$_statusUsername" == "$_username" || $_statusUsername == "$_token" ) ]]; then
+      if [[ "$_statusHostname" == "$DYNB_DYN_DOMAIN" && ( "$_statusUsername" == "$DYNB_USERNAME" || $_statusUsername == "$DYNB_TOKEN" ) ]]; then
         echoerr "Error: Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
         return 1
       else
@@ -583,7 +583,7 @@ function checkStatus() {
       return 0
     ;;
     badauth | 401 )
-      if [[ "$_statusUsername" == "$_username" && "$_statusPassword" == "$_password" ]]; then
+      if [[ "$_statusUsername" == "$DYNB_USERNAME" && "$_statusPassword" == "$DYNB_PASSWORD" ]]; then
         echoerr "Error: Invalid username password combination."
         return 1
       else
@@ -635,18 +635,18 @@ function checkStatus() {
 function ipHasChanged() {
   if [[ ${1} == 4 ]]; then
     remote_ip=$(getRemoteIP 4 $_ipv4_checker)
-    if [[ $_update_method == domrobot ]]; then
+    if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
       dns_ip=$(getDNSIP A)
     else
-      dns_ip=$(dig @${_DNS_checkServer} in a +short "$_dyn_domain")
+      dns_ip=$(dig @${_DNS_checkServer} in a +short "$DYNB_DYN_DOMAIN")
     fi
   fi
   if [[ ${1} == 6 ]]; then
     remote_ip=$(getRemoteIP 6 $_ipv6_checker)
-    if [[ $_update_method == domrobot ]]; then
+    if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
       dns_ip=$(getDNSIP AAAA)
     else
-      dns_ip=$(dig @${_DNS_checkServer} in aaaa +short "$_dyn_domain")
+      dns_ip=$(dig @${_DNS_checkServer} in aaaa +short "$DYNB_DYN_DOMAIN")
     fi
   fi
 
@@ -686,25 +686,25 @@ function handleParameters() {
     _debug=1
   fi
   if [[ $_arg_update_method != "" ]]; then
-    _update_method=$_arg_update_method
+    DYNB_UPDATE_METHOD=$_arg_update_method
   fi
   if [[ $_arg_ip_mode != "" ]]; then
-    _ip_mode=$_arg_ip_mode
+    DYNB_IP_MODE=$_arg_ip_mode
   fi
   if [[ $_arg_domain != "" ]]; then
-    _dyn_domain=$_arg_domain
+    DYNB_DYN_DOMAIN=$_arg_domain
   fi
   if [[ $_arg_service_provider != "" ]]; then
-    _serviceProvider=$_arg_service_provider
+    DYNB_SERVICE_PROVIDER=$_arg_service_provider
   fi
   if [[ $_arg_username != "" ]]; then
-    _username=$_arg_username
+    DYNB_USERNAME=$_arg_username
   fi
   if [[ $_arg_password != "" ]]; then
-    _password=$_arg_password
+    DYNB_PASSWORD=$_arg_password
   fi
   if [[ $_arg_token != "" ]]; then
-    _token=$_arg_token
+    DYNB_TOKEN=$_arg_token
   fi
   return 0
 }
@@ -722,7 +722,7 @@ function checkDependencies() {
   #   fi
   # done
   [[ -x $(command -v jq 2> /dev/null) ]] || {
-    if [[ $_update_method != dyndns* ]]; then
+    if [[ $DYNB_UPDATE_METHOD != dyndns* ]]; then
       echo "This script depends on jq and it is not available." >&2
       exit 1
     fi
@@ -733,11 +733,11 @@ function doUnsets() {
   unset _network_interface
   unset _DNS_checkServer
   unset _dns_records
-  unset _dyn_domain
+  unset DYNB_DYN_DOMAIN
   unset _has_getopt
   unset _help_message
   unset _INWX_JSON_API_URL
-  unset _ip_mode
+  unset DYNB_IP_MODE
   unset _ipv4_checker
   unset _ipv6_checker
   unset _is_IPv4_enabled
@@ -745,9 +745,9 @@ function doUnsets() {
   unset _main_domain
   unset _new_IPv4
   unset _new_IPv6
-  unset _password
-  unset _username
-  unset _serviceProvider
+  unset DYNB_PASSWORD
+  unset DYNB_USERNAME
+  unset DYNB_SERVICE_PROVIDER
   unset _version
 }
 
@@ -781,20 +781,20 @@ function dynb() {
     _interface_str="--interface $_network_interface"
   fi
 
-  if [[ $_ip_mode == d* ]]; then
+  if [[ $DYNB_IP_MODE == d* ]]; then
     _is_IPv4_enabled=true
     _is_IPv6_enabled=true
   fi
-  if [[ $_ip_mode == *4* ]]; then
+  if [[ $DYNB_IP_MODE == *4* ]]; then
     _is_IPv4_enabled=true
   fi
-  if [[ $_ip_mode == *6* ]]; then
+  if [[ $DYNB_IP_MODE == *6* ]]; then
     _is_IPv6_enabled=true
   fi
 
   ## execute operations
 
-  if [[ $_update_method == "domrobot" ]]; then
+  if [[ $DYNB_UPDATE_METHOD == "domrobot" ]]; then
     getMainDomain
     fetchDNSRecords
     if [[ $_is_IPv4_enabled == true ]]; then
@@ -811,7 +811,7 @@ function dynb() {
     fi
   fi
 
-  if [[ $_update_method == "dyndns" ]]; then
+  if [[ $DYNB_UPDATE_METHOD == "dyndns" ]]; then
     changed=0
     if [[ $_is_IPv4_enabled == true ]]; then
       ipHasChanged 4
@@ -828,7 +828,7 @@ function dynb() {
           debugMessage "DynDNS2 update success"
         else
           debugMessage "Save new status after dynupdate has failed"
-          setStatus "$_response" "$(date +%s)" $(( _errorCounter += 1 )) "$_dyn_domain" "${_username}" "${_password}${_token}"
+          setStatus "$_response" "$(date +%s)" $(( _errorCounter += 1 )) "$DYNB_DYN_DOMAIN" "${DYNB_USERNAME}" "${DYNB_PASSWORD}${DYNB_TOKEN}"
         fi
       else
         debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
