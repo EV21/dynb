@@ -58,21 +58,23 @@ Or you can just use CLI parameters.
 
 Create `.env` in the app root directory or at `~/.local/share/dynb/.env`.
 ```
-_dyn_domain=dyndns.example.com
+DYNB_DYN_DOMAIN=dyndns.example.com
 
-## service provider could be inwx
-_serviceProvider=inwx
+## service provider could be deSEC, duckdns, dynv6, inwx
+DYNB_SERVICE_PROVIDER=inwx
 
 ## update method options: domrobot, dyndns
-_update_method=domrobot
+DYNB_UPDATE_METHOD=domrobot
 
 ## ip mode could be either: 4, 6 or dual for dualstack
-_ip_mode=dual
+DYNB_IP_MODE=64
 
 ## If you are using the DomRobot RPC-API enter your credentials for the web interface login here
 ## If you are using the DynDNS2 protocol enter your credentials here
-_username=
-_password=
+DYNB_USERNAME=User42
+DYNB_PASSWORD=SuperSecretPassword
+## or use a token
+DYNB_TOKEN=
 ```
 
 ## 🏃 Run
