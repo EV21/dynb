@@ -35,6 +35,8 @@
 
 ### Documentation
 
+* :memo: document loop mode and dig as requirement. [Eduard Veit]
+
 * :memo: update example of .env in README.md. [Eduard Veit]
 
 * :memo: add CHANGELOG.md. [Eduard Veit]

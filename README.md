@@ -31,7 +31,8 @@ The following update methods are currently implemented:
 
 ## 📦 Requirements
 
-* `curl` - The minimum requirement for running DynDNS2 operations
+* `curl` - The minimum requirement for all API requests.
+* `dig` - You can get it by installing `dnsutils` (debian/ubuntu/ArchLinux), `bind-utils` (CentOS/RHEL), `bind-tools` (Alpine)
 
 also essential if you are using other APIs:
 
@@ -96,7 +97,14 @@ dynb --ip-mode dualstack --update-method dyndns --provider inwx --domain dyndns.
 ```
 
 ## ⏰ Cron
-To automatically call the script you can use cron.
+
+To automatically call the script you can use either crontab or the script can also run in a loop mode.
+
+### loop mode
+
+Just use the parameter `--interval 60` or the environment variable `DYNB_INTERVAL=60` so the script will check every 60 seconds if it needs to do an update.
+
+### crontab
 
 execute :point_down:
 ```
