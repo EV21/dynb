@@ -1,9 +1,11 @@
 # Changelog
 
 
-## (unreleased)
+## 0.1.0 (2021-04-22)
 
 ### New
+
+* :sparkles: add Dockerfile. [Eduard Veit]
 
 * :sparkles: add loop mode. [Eduard Veit]
 
@@ -34,6 +36,8 @@
   :recycle: do some shellcheck fixes
 
 ### Documentation
+
+* :memo: document example of an docker-compose.yml file. [Eduard Veit]
 
 * :memo: document loop mode and dig as requirement. [Eduard Veit]
 

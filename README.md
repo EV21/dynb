@@ -11,6 +11,7 @@ IPv4 (A) and IPv6 (AAAA) record updates are supported.
 - [⚙ Configuration](#-configuration)
 - [🏃 Run](#-run)
 - [⏰ Cron](#-cron)
+- [⏰ docker](#-docker)
 <!-- /TOC -->
 
 ## ✨ Update Methods
@@ -115,3 +116,27 @@ then enter :point_down: to run dynb every five minutes.
 */5 * * * * $HOME/.local/bin/dynb >> $HOME/.local/share/dynb/dynb-cron.log
 ```
 Note, cron typically does not use the users PATH variable.
+
+## 🐟 docker
+
+This is an example of a `docker-compose.yml` file. If you are using IPv6 make sure the routing works properly with your docker container.
+```yaml
+version: '3.4'
+
+services:
+  dynb:
+    image: ev21/dynb
+    container_name: dynb
+    network_mode: host
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - DYNB_DYN_DOMAIN=dyndns.example.com
+      - DYNB_SERVICE_PROVIDER=inwx
+      - DYNB_UPDATE_METHOD=dyndns
+      - DYNB_IP_MODE=64
+      - DYNB_USERNAME=User42
+      - DYNB_PASSWORD=SuperSecretPassword
+      - DYNB_INTERVAL=60
+```
