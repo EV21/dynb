@@ -1,0 +1,9 @@
+**/.env
+**/.dockerignore
+**/.docker-compose.debug.yml
+**/.docker-compose.yml
+**/.git
+**/.gitignore
+**/.gitchangelog.rc
+man/man.rst
+man/man-defs.rst
