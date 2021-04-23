@@ -141,12 +141,12 @@ services:
       - DYNB_INTERVAL=60
 ```
 ## environment variables
-| variable              | default value   | description |
-| --------------------- | --------------- | ----------- |
-| DYNB_DYN_DOMAIN       | undefined       | required |
-| DYNB_SERVICE_PROVIDER | undefined       | required |
-| DYNB_UPDATE_METHOD    | undefined       | required |
-| DYNB_IP_MODE          | undefined       | required |
+| variable              | default value   | description                                   |
+| --------------------- | --------------- | --------------------------------------------- |
+| DYNB_DYN_DOMAIN       | undefined       | required; `dyndns.example.com`                |
+| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx` |
+| DYNB_UPDATE_METHOD    | undefined       | required; `dyndns` or `domrobot` (with inwx)  |
+| DYNB_IP_MODE          | undefined       | required; `4`, `6` or `64` for both           |
 | DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method |
 | DYNB_PASSWORD         | undefined       | the requirement depends on your provider and the update method |
 | DYNB_TOKEN            | undefined       | the requirement depends on your provider and the update method |
