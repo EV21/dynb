@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 0.1.2 (2021-04-23)
+
+### Documentation
+
+* :memo: document environment variables. [Eduard Veit]
+
+### Other
+
+* :recycle: refactor: method extractions and other beautifications. [Eduard Veit]
+
+
 ## 0.1.1 (2021-04-23)
 
 ### Fix

@@ -11,7 +11,7 @@ IPv4 (A) and IPv6 (AAAA) record updates are supported.
 - [⚙ Configuration](#-configuration)
 - [🏃 Run](#-run)
 - [⏰ Cron](#-cron)
-- [⏰ docker](#-docker)
+- [🐟 docker](#-docker)
 <!-- /TOC -->
 
 ## ✨ Update Methods
@@ -140,3 +140,18 @@ services:
       - DYNB_PASSWORD=SuperSecretPassword
       - DYNB_INTERVAL=60
 ```
+## environment variables
+| variable              | default value   | description |
+| --------------------- | --------------- | ----------- |
+| DYNB_DYN_DOMAIN       | undefined       | required |
+| DYNB_SERVICE_PROVIDER | undefined       | required |
+| DYNB_UPDATE_METHOD    | undefined       | required |
+| DYNB_IP_MODE          | undefined       | required |
+| DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method |
+| DYNB_PASSWORD         | undefined       | the requirement depends on your provider and the update method |
+| DYNB_TOKEN            | undefined       | the requirement depends on your provider and the update method |
+| DYNB_INTERVAL         | undefined       | without this setting the script/docker container will run one time and exits |
+| DYNB_DEBUG            | undefined       | more console outputs |
+| DYNB_IPv4_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP |
+| DYNB_IPv6_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP |
+| DYNB_DNS_CHECK_SERVER | 1.1.1.1         | If you are using a local DNS Resolver/Server make sure it answers with the public answer |
