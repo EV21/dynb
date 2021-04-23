@@ -65,7 +65,7 @@ _response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
-_version=0.1.0
+_version=0.1.1
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
@@ -656,18 +656,40 @@ function checkStatus() {
 function ipHasChanged() {
   if [[ ${1} == 4 ]]; then
     remote_ip=$(getRemoteIP 4 $_ipv4_checker)
+    #TODO: this is doublicated code, refactor this some time
+    if [[ $? -gt 0 ]]; then
+      echoerr "IPCheck (getRemoteIP) request failed $remote_ip"
+      return 0
+    fi
     if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
       dns_ip=$(getDNSIP A)
     else
-      dns_ip=$(dig @${_DNS_checkServer} in a +short "$DYNB_DYN_DOMAIN")
+      dig_response=$(dig @${_DNS_checkServer} in a +short "$DYNB_DYN_DOMAIN")
+      #TODO: this is doublicated code, refactor this some time
+      if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
+        echoerr "DNS request failed $dig_response"
+        return 0
+      fi
+      dns_ip=$dig_response
     fi
   fi
   if [[ ${1} == 6 ]]; then
     remote_ip=$(getRemoteIP 6 $_ipv6_checker)
+    #TODO: this is doublicated code, refactor this some time
+    if [[ $? -gt 0 ]]; then
+      echoerr "IPCheck (getRemoteIP) request failed $remote_ip"
+      return 0
+    fi
     if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
       dns_ip=$(getDNSIP AAAA)
     else
-      dns_ip=$(dig @${_DNS_checkServer} in aaaa +short "$DYNB_DYN_DOMAIN")
+      dig_response=$(dig @${_DNS_checkServer} in aaaa +short "$DYNB_DYN_DOMAIN")
+      #TODO: this is doublicated code, refactor this some time
+      if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
+        echoerr "DNS request failed $dig_response"
+        return 0
+      fi
+      dns_ip=$dig_response
     fi
   fi
 
@@ -847,7 +869,7 @@ function doUpdates() {
         debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
       fi
     else
-      debugMessage "Skip DynDNS2 update, IPs are up to date"
+      debugMessage "Skip DynDNS2 update, IPs are up to date or there is a connection problem"
     fi
   fi
 }
@@ -882,7 +904,7 @@ function dynb() {
 
 
   if loopMode; then
-    while checkStatus
+    while :
     do
       doUpdates
       sleep $DYNB_INTERVAL

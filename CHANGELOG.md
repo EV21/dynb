@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.1.1 (2021-04-23)
+
+### Fix
+
+* :bug: fix loop and error handling in case of connection issues. [Eduard Veit]
+
+
 ## 0.1.0 (2021-04-22)
 
 ### New
