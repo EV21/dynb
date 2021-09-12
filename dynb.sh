@@ -301,33 +301,6 @@ parse_commandline "$@"
 # [ <-- needed because of Argbash
 
 # The generated argbash help message does not look as nice as this:
-_help_message="$(cat << 'EOF'
-dynb - dynamic DNS update script for bash
-
-Usage
-=====
-dynb [options]
-
--h, --help                                displays this help message
---version                                 outputs the client version
---link                                    links to your script at ~/.local/bin/dynb
---reset                                   deletes the client blocking status file
-
-Configuration options
----------------------
--i | --ip-mode [ 4 | 6 | dual ]           updates type A (IPv4) and AAAA (IPv6) records
--m | --update-method [dyndns | domrobot]  choose if you want to use DynDNS2 or the DomRobot RPC-API
--s | --service-provider inwx              set your provider in case you are using DynDNS2
--d | --domain "dyndns.example.com"        set the domain you want to update
--u | --username "user42"                  depends on your selected update method and your provider
--p | --password "SuperSecretPassword"     depends on your selected update method and your provider
--t | --token "YourProviderGivenToken"     depends on your selected update method and your provider
-
-##### examples #####
-dynb --ip-mode dual --update-method domrobot --domain dyndns.example.com --username user42 --password SuperSecretPassword
-dynb --ip-mode dual --update-method dyndns --service-provider inwx --domain dyndns.example.com --username user42 --password SuperSecretPassword
-EOF
-)"
 
 function loopMode() {
   if [[ $_loopMode -eq 1 ]]; then
