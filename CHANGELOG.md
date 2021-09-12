@@ -1,6 +1,23 @@
 # Changelog
 
 
+## (unreleased)
+
+### Documentation
+
+* :memo: update README.md. [Eduard Veit]
+
+### Other
+
+* :recycle: normalizing pre-commit configuration to a top-level map. [Eduard Veit]
+
+* :recycle: refactorings. [Eduard Veit]
+
+* Feature: :sparkles: add pre-commit git hook for shellcheck. [Eduard Veit]
+
+* Refactor: :recycle: remove unused help message. [Eduard Veit]
+
+
 ## 0.1.2 (2021-04-23)
 
 ### Documentation
