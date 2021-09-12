@@ -392,6 +392,11 @@ function getDNSIP() {
 function getRemoteIP() {
   curl --silent "$_interface_str" --user-agent "$_userAgent" \
     --ipv"${1}" --dns-servers 1.1.1.1 --location "${2}"
+  # shellcheck disable=2181
+  if [[ $? -gt 0 ]]; then
+    errorMessage "IPCheck (getRemoteIP ${1}) request failed"
+    exit 1
+  fi
 }
 
 # requires parameter
@@ -636,52 +641,40 @@ function checkStatus() {
 # requires parameter
 # 1. param: 4 or 6 for IP version
 function ipHasChanged() {
-  if [[ ${1} == 4 ]]; then
-    remote_ip=$(getRemoteIP 4 $_ipv4_checker)
-    #TODO: this is duplicated code, refactor this.
-    if [[ $? -gt 0 ]]; then
-      errorMessage "IPCheck (getRemoteIP 4) request failed $remote_ip"
-      return 0
-    fi
-    if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
-      dns_ip=$(getDNSIP A)
-    else
-      dig_response=$(dig @${_DNS_checkServer} in a +short "$DYNB_DYN_DOMAIN")
-      #TODO: this is duplicated code, refactor this.
-      if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
-        errorMessage "DNS request failed $dig_response"
+  case ${1} in
+    4 )
+      remote_ip=$(getRemoteIP 4 $_ipv4_checker)
+      if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
+        dns_ip=$(getDNSIP A)
+      else
+        dig_response=$(dig @${_DNS_checkServer} in a +short "$DYNB_DYN_DOMAIN")
+        if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
+          errorMessage "DNS request failed $dig_response"
         return 0
+        fi
+        dns_ip=$dig_response
       fi
-      dns_ip=$dig_response
-    fi
-  fi
-  if [[ ${1} == 6 ]]; then
-    remote_ip=$(getRemoteIP 6 $_ipv6_checker)
-    #TODO: this is duplicated code, refactor this.
-    if [[ $? -gt 0 ]]; then
-      errorMessage "IPCheck (getRemoteIP 6) request failed $remote_ip"
-      return 0
-    fi
-    if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
-      dns_ip=$(getDNSIP AAAA)
-    else
-      dig_response=$(dig @${_DNS_checkServer} in aaaa +short "$DYNB_DYN_DOMAIN")
-      #TODO: this is duplicated code, refactor this.
-      if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
-        errorMessage "DNS request failed $dig_response"
-        return 0
+      _new_IPv4=$remote_ip
+      debugMessage "New IPv4: $_new_IPv4 old was: $dns_ip"
+    ;;
+    6 )
+      remote_ip=$(getRemoteIP 6 $_ipv6_checker)
+      if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
+        dns_ip=$(getDNSIP AAAA)
+      else
+        dig_response=$(dig @${_DNS_checkServer} in aaaa +short "$DYNB_DYN_DOMAIN")
+        if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
+          errorMessage "DNS request failed $dig_response"
+          return 0
+        fi
+        dns_ip=$dig_response
       fi
-      dns_ip=$dig_response
-    fi
-  fi
-
-  if [[ ${1} == 4 ]]; then
-    _new_IPv4=$remote_ip
-    debugMessage "New IPv4: $_new_IPv4 old was: $dns_ip"
-  else
-    _new_IPv6=$remote_ip
-    debugMessage "New IPv6: $_new_IPv6 old was: $dns_ip"
-  fi
+      _new_IPv6=$remote_ip
+      debugMessage "New IPv6: $_new_IPv6 old was: $dns_ip"
+    ;;
+    * )
+    ;;
+  esac
 
   if [[ "$remote_ip" == "$dns_ip" ]]; then
     return 0
@@ -761,9 +754,11 @@ function handleParameters() {
   if [[ $DYNB_DEBUG == true ]]; then
     _debug=1
   fi
+  # shellcheck disable=SC2154
   if [[ -n $DYNB_IPv4_CHECK_SITE ]]; then
     _ipv4_checker=$DYNB_IPv4_CHECK_SITE
   fi
+  # shellcheck disable=SC2154
   if [[ -n $DYNB_IPv6_CHECK_SITE ]]; then
     _ipv6_checker=$DYNB_IPv6_CHECK_SITE
   fi
