@@ -1,6 +1,6 @@
 repos:
--   repo: git://github.com/detailyang/pre-commit-shell
-    rev: v1.0.6
+  - repo: https://github.com/syntaqx/git-hooks
+    rev: v0.0.17
     hooks:
-    - id: shell-lint
-      #args: [--format=json]
+    - id: shellcheck
+    - id: shfmt
