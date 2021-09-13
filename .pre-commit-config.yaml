@@ -9,3 +9,17 @@ repos:
         - "-i 2" # indent: 0 for tabs (default), >0 for number of spaces
         - "-ci" # switch cases will be indented
         - "-w" # write result to file instead of stdout
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.9
+    hooks:
+    - id: mdformat
+      additional_dependencies:
+      - mdformat-gfm # GitHub Flavored Markdown support
+  - repo: https://codeberg.org/frnmst/md-toc
+    rev: 8.0.1  # or a specific git tag from md-toc
+    hooks:
+    - id: md-toc
+      args:
+        - "--in-place"
+        - "github"
+        - "--header-levels 6"
