@@ -4,3 +4,8 @@ repos:
     hooks:
     - id: shellcheck
     - id: shfmt
+      args: 
+        - "-l" # list files whose formatting differs from shfmt's
+        - "-i 2" # indent: 0 for tabs (default), >0 for number of spaces
+        - "-ci" # switch cases will be indented
+        - "-w" # write result to file instead of stdout
