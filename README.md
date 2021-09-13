@@ -154,4 +154,4 @@ services:
 | DYNB_DEBUG            | undefined       | more console outputs |
 | DYNB_IPv4_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP |
 | DYNB_IPv6_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP |
-| DYNB_DNS_CHECK_SERVER | 1.1.1.1         | If you are using a local DNS Resolver/Server make sure it answers with the public answer |
+| DYNB_DNS_CHECK_SERVER | undefined       | If you are using a local DNS Resolver/Server make sure it answers with the public answer or set another server |
