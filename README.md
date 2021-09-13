@@ -1,55 +1,62 @@
 # 🔃 DynB
+
 DynB - dynamic DNS update script, written in bash
 
 IPv4 (A) and IPv6 (AAAA) record updates are supported.
+
 <!-- TOC -->
+
 - [✨ Update Methods](#-update-methods)
-    - [APIs](#apis)
-    - [DynDNS2](#dyndns2)
+  - [APIs](#apis)
+  - [DynDNS2](#dyndns2)
 - [📦 Requirements](#-requirements)
 - [🚀 Installation](#-installation)
 - [⚙ Configuration](#-configuration)
 - [🏃 Run](#-run)
 - [⏰ Cron](#-cron)
 - [🐟 docker](#-docker)
+
 <!-- /TOC -->
 
 ## ✨ Update Methods
+
 The following update methods are currently implemented:
 
 ### APIs
 
-* INWX.com Domrobot JSON-RPC-API  
+- INWX.com Domrobot JSON-RPC-API\
   Limitations:
   - minimum TTL is 300 (5 minutes)
 
 ### DynDNS2
 
-* INWX.com  
-* deSEC.io (dedyn.io)  
-* DuckDNS.org  
-* dynv6.com  
+- INWX.com
+- deSEC.io (dedyn.io)
+- DuckDNS.org
+- dynv6.com
 
 ## 📦 Requirements
 
-* `curl` - The minimum requirement for all API requests.
-* `dig` - You can get it by installing `dnsutils` (debian/ubuntu/ArchLinux), `bind-utils` (CentOS/RHEL), `bind-tools` (Alpine)
+- `curl` - The minimum requirement for all API requests.
+- `dig` - You can get it by installing `dnsutils` (debian/ubuntu/ArchLinux), `bind-utils` (CentOS/RHEL), `bind-tools` (Alpine)
 
 also essential if you are using other APIs:
 
-* `jq` - Command-line JSON processor
+- `jq` - Command-line JSON processor
 
 ## 🚀 Installation
 
 Download the latest release
 
 or simply clone this repo
-```
+
+```shell
 git clone https://github.com/EV21/dynb.git
 ```
 
 If you want to add the script to you PATH, run :point_down:
-```
+
+```shell
 bash dynb.sh --link
 ```
 
@@ -59,7 +66,8 @@ You can use a config in form of an `.env` file.
 Or you can just use CLI parameters.
 
 Create `.env` in the app root directory or at `~/.local/share/dynb/.env`.
-```
+
+```bash
 DYNB_DYN_DOMAIN=dyndns.example.com
 
 ## service provider could be deSEC, duckdns, dynv6, inwx
@@ -82,18 +90,23 @@ DYNB_TOKEN=
 ## 🏃 Run
 
 If you have a config file just run :point_down:
-```
+
+```bash
 dynb
 ```
-Alternatively you can use parameters if your system meets the relevant requirements. This example shows the long form parameter, there are also short ones.  
+
+Alternatively you can use parameters if your system meets the relevant requirements. This example shows the long form parameter, there are also short ones.\
 Call the help function :point_down:
-```
+
+```bash
 dynb --help
 ```
-```
+
+```bash
 dynb --ip-mode dualstack --update-method domrobot --domain dyndns.example.com --username user42 --password SuperSecretPassword
 ```
-```
+
+```bash
 dynb --ip-mode dualstack --update-method dyndns --provider inwx --domain dyndns.example.com --username user42 --password SuperSecretPassword
 ```
 
@@ -108,18 +121,23 @@ Just use the parameter `--interval 60` or the environment variable `DYNB_INTERVA
 ### crontab
 
 execute :point_down:
-```
+
+```bash
 crontab -e
 ```
+
 then enter :point_down: to run dynb every five minutes.
-```
+
+```bash
 */5 * * * * $HOME/.local/bin/dynb >> $HOME/.local/share/dynb/dynb-cron.log
 ```
+
 Note, cron typically does not use the users PATH variable.
 
 ## 🐟 docker
 
 This is an example of a `docker-compose.yml` file. If you are using IPv6 make sure the routing works properly with your docker container.
+
 ```yaml
 version: '3.4'
 
@@ -140,18 +158,20 @@ services:
       - DYNB_PASSWORD=SuperSecretPassword
       - DYNB_INTERVAL=60
 ```
+
 ## environment variables
-| variable              | default value   | description                                   |
-| --------------------- | --------------- | --------------------------------------------- |
-| DYNB_DYN_DOMAIN       | undefined       | required; `dyndns.example.com`                |
-| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx` |
-| DYNB_UPDATE_METHOD    | undefined       | required; `dyndns` or `domrobot` (with inwx)  |
-| DYNB_IP_MODE          | undefined       | required; `4`, `6` or `64` for both           |
-| DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method |
-| DYNB_PASSWORD         | undefined       | the requirement depends on your provider and the update method |
-| DYNB_TOKEN            | undefined       | the requirement depends on your provider and the update method |
-| DYNB_INTERVAL         | undefined       | without this setting the script/docker container will run one time and exits |
-| DYNB_DEBUG            | undefined       | more console outputs |
-| DYNB_IPv4_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP |
-| DYNB_IPv6_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP |
+
+| variable              | default value   | description                                                                                                    |
+| --------------------- | --------------- | -------------------------------------------------------------------------------------------------------------- |
+| DYNB_DYN_DOMAIN       | undefined       | required; `dyndns.example.com`                                                                                 |
+| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`                                                                  |
+| DYNB_UPDATE_METHOD    | undefined       | required; `dyndns` or `domrobot` (with inwx)                                                                   |
+| DYNB_IP_MODE          | undefined       | required; `4`, `6` or `64` for both                                                                            |
+| DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method                                                 |
+| DYNB_PASSWORD         | undefined       | the requirement depends on your provider and the update method                                                 |
+| DYNB_TOKEN            | undefined       | the requirement depends on your provider and the update method                                                 |
+| DYNB_INTERVAL         | undefined       | without this setting the script/docker container will run one time and exits                                   |
+| DYNB_DEBUG            | undefined       | more console outputs                                                                                           |
+| DYNB_IPv4_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP                                                      |
+| DYNB_IPv6_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP                                                      |
 | DYNB_DNS_CHECK_SERVER | undefined       | If you are using a local DNS Resolver/Server make sure it answers with the public answer or set another server |
