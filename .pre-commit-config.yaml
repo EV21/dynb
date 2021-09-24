@@ -15,11 +15,3 @@ repos:
     - id: mdformat
       additional_dependencies:
       - mdformat-gfm # GitHub Flavored Markdown support
-  - repo: https://codeberg.org/frnmst/md-toc
-    rev: 8.0.1  # or a specific git tag from md-toc
-    hooks:
-    - id: md-toc
-      args:
-        - "--in-place"
-        - "github"
-        - "--header-levels 6"
