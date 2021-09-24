@@ -1,19 +1,49 @@
 # Changelog
 
 
-## (unreleased)
+## 0.2.0 (2021-09-24)
+
+### New
+
+* :sparkles: enable parameter extensions for `docker run --interactive` [Eduard Veit]
+
+* :sparkles: add pre-commit hooks for markdown. [Eduard Veit]
+
+* :sparkles: change git hooks and add shfmt. [Eduard Veit]
+
+* :sparkles: add pre-commit git hook for shellcheck. [Eduard Veit]
+
+### Changes
+
+* :wrench: remove md-toc from pre-commit. [Eduard Veit]
+
+* :wrench: handle dns server selection. [Eduard Veit]
 
 ### Documentation
+
+* :memo: update CHANGELOG.md. [Eduard Veit]
+
+* :memo: document docker parameters. [Eduard Veit]
+
+* :memo: change default dns server setting. [Eduard Veit]
+
+* :memo: update CHANGELOG. [Eduard Veit]
 
 * :memo: update README.md. [Eduard Veit]
 
 ### Other
 
+* :art: lint README.md. [Eduard Veit]
+
+* :art: add shfmt params to pre-commit check. [Eduard Veit]
+
+* :art: fix shell style. [Eduard Veit]
+
+* :recycle: seperate parsing logic. [Eduard Veit]
+
 * :recycle: normalizing pre-commit configuration to a top-level map. [Eduard Veit]
 
 * :recycle: refactorings. [Eduard Veit]
-
-* Feature: :sparkles: add pre-commit git hook for shellcheck. [Eduard Veit]
 
 * Refactor: :recycle: remove unused help message. [Eduard Veit]
 
