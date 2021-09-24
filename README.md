@@ -14,7 +14,10 @@ IPv4 (A) and IPv6 (AAAA) record updates are supported.
 - [⚙ Configuration](#-configuration)
 - [🏃 Run](#-run)
 - [⏰ Cron](#-cron)
+  - [loop mode](#loop-mode)
+  - [crontab](#crontab)
 - [🐟 docker](#-docker)
+- [environment variables](#environment-variables)
 
 <!-- /TOC -->
 
@@ -132,11 +135,17 @@ then enter :point_down: to run dynb every five minutes.
 */5 * * * * $HOME/.local/bin/dynb >> $HOME/.local/share/dynb/dynb-cron.log
 ```
 
+alternative with docker and parameters::
+
+```bash
+*/5 * * * * docker run --interactive --tty --rm --network host ev21/dynb:latest --ip-mode 64 --update-method domrobot --domain dyndns.example.com --username user42 --password SuperSecretPassword
+```
+
 Note, cron typically does not use the users PATH variable.
 
 ## 🐟 docker
 
-This is an example of a `docker-compose.yml` file. If you are using IPv6 make sure the routing works properly with your docker container.
+This is an example of a `docker-compose.yml` file. If you are using IPv6 make sure the routing works properly with your docker container. Note: [IPv6 networking](https://docs.docker.com/config/daemon/ipv6/) is only supported on Docker daemons running on Linux hosts.
 
 ```yaml
 version: '3.4'
