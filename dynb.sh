@@ -726,5 +726,3 @@ function dynb() {
 
 dynb "${@}"
 exit $?
-
-# ] <-- needed because of Argbash
