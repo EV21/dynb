@@ -73,6 +73,14 @@ _debug=0
 _minimum_looptime=60
 _loopMode=0
 
+# Ansi color code variables
+yellow_color="\e[0;33m"
+green_color="\e[0;92m"
+expand_bg="\e[K"
+red_color_bg="\e[0;101m${expand_bg}"
+bold="\e[1m"
+reset_color_modification="\e[0m"
+
 function loopMode() {
   if [[ $_loopMode -eq 1 ]]; then
     return 0
@@ -90,16 +98,18 @@ function debugMode() {
 }
 
 function infoMessage() {
-  echo "$(logtime) INFO: $*"
+  echo -e "${green_color}$(logtime) INFO: $*${reset_color_modification}"
 }
 
 function debugMessage() {
   if debugMode; then
-    echo "$(logtime) DEBUG: $*"
+    echo -e "${yellow_color}$(logtime) DEBUG: ${*}${reset_color_modification}"
   fi
 }
 
-function errorMessage() { printf "$(logtime) ERROR: %s\n" "$*" >&2; }
+function errorMessage() {
+  echo -e "${red_color_bg}${bold}$(logtime) ERROR: $*${reset_color_modification}" >&2
+}
 
 function logtime() {
   LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
