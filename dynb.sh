@@ -51,6 +51,7 @@ _network_interface=
 ######################################################
 ## You don't need to change the following variables ##
 _INWX_JSON_API_URL=https://api.domrobot.com/jsonrpc/
+_internet_connectivity_test_server=https://www.google.de
 _new_IPv4=
 _new_IPv6=
 _dns_records=
@@ -690,6 +691,43 @@ function doUpdates() {
   fi
 }
 
+function ipv6_is_not_working() {
+  curl --ipv6 --head --silent --max-time 1 "$_internet_connectivity_test_server" > /dev/null
+  status_code=$?
+  if [[ $status_code -gt 0 ]]
+  then return 0
+  else return 1
+  fi
+}
+
+function ipv4_is_not_working() {
+  curl --ipv4 --head --silent --max-time 1 "$_internet_connectivity_test_server" > /dev/null
+  status_code=$?
+  if [[ $status_code -gt 0 ]]
+  then return 0
+  else return 1
+  fi
+}
+
+function check_internet_connection() {
+  if [[ $_is_IPv4_enabled == true ]]
+  then
+    if ipv4_is_not_working
+    then
+      _is_IPv4_enabled="false"
+      errorMessage "Your IPv4 internet connection does not work."
+    fi
+  fi
+  if [[ $_is_IPv6_enabled == true ]]
+  then
+    if ipv6_is_not_working
+    then
+      _is_IPv6_enabled="false"
+      errorMessage "Your IPv6 internet connection does not work."
+    fi
+  fi
+}
+
 #################
 ## MAIN method ##
 #################
@@ -717,6 +755,7 @@ function dynb() {
   ## parameters and checks
   handleParameters
   checkDependencies
+  check_internet_connection
 
   if loopMode; then
     while :; do
