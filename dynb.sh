@@ -66,7 +66,7 @@ _response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
-_version=0.1.2
+_version=0.3.0
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
@@ -81,6 +81,23 @@ expand_bg="\e[K"
 red_color_bg="\e[0;101m${expand_bg}"
 bold="\e[1m"
 reset_color_modification="\e[0m"
+
+REGEX_IPv4="^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$"
+REGEX_IPv6="^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$"
+
+function is_IPv4_address() {
+  if [[ $1 =~ $REGEX_IPv4 ]]
+  then return 0
+  else return 1
+  fi
+}
+
+function is_IPv6_address() {
+  if [[ $1 =~ $REGEX_IPv6 ]]
+  then return 0
+  else return 1
+  fi
+}
 
 function loopMode() {
   if [[ $_loopMode -eq 1 ]]; then
@@ -220,7 +237,7 @@ function updateRecord() {
         --request POST $_INWX_JSON_API_URL \
         --data "$request"
     )
-    echo -e "$(echo "$_response" | jq --raw-output '.msg')\n Domain: $DYNB_DYN_DOMAIN\n new IPv${1}: $IP"
+    infoMessage "$(echo "$_response" | jq --raw-output '.msg')\n Domain: $DYNB_DYN_DOMAIN\n New IPv${1}: $IP"
   fi
 }
 
@@ -438,6 +455,11 @@ function ipHasChanged() {
   case ${1} in
     4)
       remote_ip=$(getRemoteIP 4 $_ipv4_checker)
+      if ! is_IPv4_address "$remote_ip"
+      then
+        errorMessage "The response from the IP check server is not an IPv4 address: $remote_ip"
+        return 0
+      fi
       if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
         dns_ip=$(getDNSIP A)
       else
@@ -450,13 +472,20 @@ function ipHasChanged() {
           errorMessage "DNS request failed $dig_response"
           return 0
         fi
-        dns_ip=$dig_response
+        # If the dns resolver lists multiple records in the answer section we filter the first line
+        # using short option "-n" and not "--lines" because of alpines limited BusyBox head command
+        dns_ip=$(echo "$dig_response" | head -n 1)
       fi
       _new_IPv4=$remote_ip
-      debugMessage "New IPv4: $_new_IPv4 old was: $dns_ip"
+      debugMessage "IPv4 from remote IP check server: $_new_IPv4, IPv4 from DNS: $dns_ip"
       ;;
     6)
       remote_ip=$(getRemoteIP 6 $_ipv6_checker)
+      if ! is_IPv6_address "$remote_ip"
+      then
+        errorMessage "The response from the IP check server is not an IPv6 address: $remote_ip"
+        return 0
+      fi
       if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
         dns_ip=$(getDNSIP AAAA)
       else
@@ -469,18 +498,22 @@ function ipHasChanged() {
           errorMessage "DNS request failed $dig_response"
           return 0
         fi
-        dns_ip=$dig_response
+        # If the dns server lists multiple records in the answer section we filter the first line
+        dns_ip=$(echo "$dig_response" | head -n 1)
       fi
       _new_IPv6=$remote_ip
-      debugMessage "New IPv6: $_new_IPv6 old was: $dns_ip"
+      debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv4 from DNS: $dns_ip"
       ;;
     *) ;;
-
   esac
 
   if [[ "$remote_ip" == "$dns_ip" ]]; then
     return 0
   else
+    case ${1} in
+    4) infoMessage "New IPv4: $_new_IPv4 old was: $dns_ip";;
+    6) infoMessage "New IPv6: $_new_IPv6 old was: $dns_ip";;
+    esac
     return 1
   fi
 }
