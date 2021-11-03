@@ -82,24 +82,34 @@ ignore_regexps = [
 ## whenever you are tweaking this variable.
 ##
 section_regexps = [
-    ('New', [
-        r'^:sparkles\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+    ('Features', [
+        r'^[fF]eat\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
      ]),
-    ('Changes', [
-        r'^:wrench\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+    ('Added', [
+        r'^[aA]dd\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
+    ('Changed', [
+        r'^[cC]hange\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
+    ('Deprecated', [
+        r'^[dD]epricated\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
+    ('Removed', [
+        r'^[rR]emove\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
      ]),
     ('Fix', [
-        r'^:bug\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+        r'^[fF]ix\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
+    ('Security', [
+        r'^[sS]ec\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
      ]),
     ('Documentation', [
-        r'^:memo\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
-     ]),     
-    ('Remove', [
-        r'^:fire\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
-     ]),     
+        r'^[dD]oc\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
 
-    ('Other', None ## Match all lines
-     ),
+
+    #('Other', None ## Match all lines
+    # ),
 
 ]
 
