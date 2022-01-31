@@ -85,57 +85,66 @@ reset_color_modification="\e[0m"
 REGEX_IPv4="^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$"
 REGEX_IPv6="^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$"
 
-function is_IPv4_address() {
-  if [[ $1 =~ $REGEX_IPv4 ]]
+function is_IPv4_address
+{
+  local ip=$1
+  if [[ $ip =~ $REGEX_IPv4 ]]
   then return 0
   else return 1
   fi
 }
 
-function is_IPv6_address() {
-  if [[ $1 =~ $REGEX_IPv6 ]]
+function is_IPv6_address
+{
+  local ip=$1
+  if [[ $ip =~ $REGEX_IPv6 ]]
   then return 0
   else return 1
   fi
 }
 
-function loopMode() {
-  if [[ $_loopMode -eq 1 ]]; then
-    return 0
-  else
-    return 1
+function loopMode
+{
+  if [[ $_loopMode -eq 1 ]]
+  then return 0
+  else return 1
   fi
 }
 
-function debugMode() {
-  if [[ $_debug -eq 1 ]]; then
-    return 0
-  else
-    return 1
+function debugMode
+{
+  if [[ $_debug -eq 1 ]]
+  then return 0
+  else return 1
   fi
 }
 
-function infoMessage() {
+function infoMessage
+{
   echo -e "${green_color}$(logtime) INFO: $*${reset_color_modification}"
 }
 
-function debugMessage() {
-  if debugMode; then
-    echo -e "${yellow_color}$(logtime) DEBUG: ${*}${reset_color_modification}"
+function debugMessage
+{
+  if debugMode
+  then echo -e "${yellow_color}$(logtime) DEBUG: ${*}${reset_color_modification}"
   fi
 }
 
-function errorMessage() {
+function errorMessage
+{
   echo -e "${red_color_bg}${bold}$(logtime) ERROR: $*${reset_color_modification}" >&2
 }
 
-function logtime() {
+function logtime
+{
   LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
   echo "[$LOGTIME]"
 }
 
 # The main domain as an identifier for the dns zone is required for the updateRecord call
-function getMainDomain() {
+function getMainDomain
+{
   request=$(
     echo "{}" |
       jq '(.method="nameserver.list")' |
@@ -154,7 +163,8 @@ function getMainDomain() {
   _main_domain=$(echo "$_response" | jq --raw-output '.domain')
 }
 
-function fetchDNSRecords() {
+function fetchDNSRecords
+{
   request=$(
     echo "{}" |
       jq '(.method="'nameserver.info'")' |
@@ -178,27 +188,34 @@ function fetchDNSRecords() {
 
 # requires parameter A or AAAA
 # result to stdout
-function getRecordID() {
-  echo "$_dns_records" | jq "select(.type == \"${1}\") | .id"
+function getRecordID
+{
+  echo "$_dns_records" |
+    jq "select(.type == \"${1}\") | .id"
 }
 
 # requires parameter A or AAAA
 # result to stdout
 function getDNSIP() {
-  echo "$_dns_records" | jq --raw-output "select(.type == \"${1}\") | .content"
+  echo "$_dns_records" |
+    jq --raw-output "select(.type == \"${1}\") | .content"
 }
 
 # requires parameter
 # 1. param: 4 or 6 for ip version
 # 2. param: IP check server address
 # result to stdout
-function getRemoteIP() {
-  if [[ -n $_DNS_checkServer ]]; then
+function getRemoteIP
+{
+  local ip_version=$1
+  local ip_check_server=$2
+  if [[ -n $_DNS_checkServer ]]
+  then
     curl --silent "$_interface_str" --user-agent "$_userAgent" \
-      --ipv"${1}" --dns-servers "$_DNS_checkServer" --location "${2}"
+      --ipv"${ip_version}" --dns-servers "$_DNS_checkServer" --location "${ip_check_server}"
   else
     curl --silent "$_interface_str" --user-agent "$_userAgent" \
-      --ipv"${1}" --location "${2}"
+      --ipv"${ip_version}" --location "${ip_check_server}"
   fi
   # shellcheck disable=2181
   if [[ $? -gt 0 ]]; then
@@ -209,16 +226,21 @@ function getRemoteIP() {
 
 # requires parameter
 # 1. param: 4 or 6 as ip version
-function updateRecord() {
-  if [[ ${1} == 4 ]]; then
+function updateRecord
+{
+  local ip_version=$1
+  if [[ ${ip_version} == 4 ]]
+  then
     ID=$(getRecordID A)
     IP=$_new_IPv4
   fi
-  if [[ ${1} == 6 ]]; then
+  if [[ ${ip_version} == 6 ]]
+  then
     ID=$(getRecordID AAAA)
     IP=$_new_IPv6
   fi
-  if [[ $IP != "" ]]; then
+  if [[ $IP != "" ]]
+  then
     request=$(
       echo "{}" |
         jq '(.method="nameserver.updateRecord")' |
@@ -242,7 +264,8 @@ function updateRecord() {
 }
 
 # using DynDNS2 protocol
-function dynupdate() {
+function dynupdate
+{
   # default parameter values
   myip_str=myip
   myipv6_str=myipv6
@@ -378,12 +401,14 @@ function dynupdate() {
   esac
 }
 
-function setStatus() {
+function setStatus
+{
   echo "_status=$1; _eventTime=$2; _errorCounter=$3; _statusHostname=$4; _statusUsername=$5; _statusPassword=$6" >/tmp/dynb.status
 }
 
 # handle errors from past update requests
-function checkStatus() {
+function checkStatus
+{
   case $_status in
     nochg*)
       if [[ _errorCounter -gt 1 ]]; then
@@ -451,26 +476,24 @@ function checkStatus() {
 
 # requires parameter
 # 1. param: 4 or 6 for IP version
-function ipHasChanged() {
-  case ${1} in
+function ipHasChanged
+{
+  local ip_version=$1
+  case ${ip_version} in
     4)
       remote_ip=$(getRemoteIP 4 $_ipv4_checker)
       if ! is_IPv4_address "$remote_ip"
-      then
-        errorMessage "The response from the IP check server is not an IPv4 address: $remote_ip"
-        return 0
+      then errorMessage "The response from the IP check server is not an IPv4 address: $remote_ip"; return 0
       fi
-      if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
-        dns_ip=$(getDNSIP A)
+      if [[ $DYNB_UPDATE_METHOD == domrobot ]]
+      then dns_ip=$(getDNSIP A)
       else
-        if [[ -n $_DNS_checkServer ]]; then
-          dig_response=$(dig @"${_DNS_checkServer}" in a +short "$DYNB_DYN_DOMAIN")
-        else
-          dig_response=$(dig in a +short "$DYNB_DYN_DOMAIN")
+        if [[ -n $_DNS_checkServer ]]
+        then dig_response=$(dig @"${_DNS_checkServer}" in a +short "$DYNB_DYN_DOMAIN")
+        else dig_response=$(dig in a +short "$DYNB_DYN_DOMAIN")
         fi
-        if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
-          errorMessage "DNS request failed $dig_response"
-          return 0
+        if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]
+        then errorMessage "DNS request failed $dig_response"; return 0
         fi
         # If the dns resolver lists multiple records in the answer section we filter the first line
         # using short option "-n" and not "--lines" because of alpines limited BusyBox head command
@@ -507,10 +530,10 @@ function ipHasChanged() {
     *) ;;
   esac
 
-  if [[ "$remote_ip" == "$dns_ip" ]]; then
-    return 0
+  if [[ "$remote_ip" == "$dns_ip" ]]
+  then return 0
   else
-    case ${1} in
+    case ${ip_version} in
     4) infoMessage "New IPv4: $_new_IPv4 old was: $dns_ip";;
     6) infoMessage "New IPv6: $_new_IPv6 old was: $dns_ip";;
     esac
@@ -522,95 +545,94 @@ function ipHasChanged() {
 ## parameters ##
 ################
 
-function handleParameters() {
+function handleParameters
+{
   # shellcheck disable=SC2154
-  if [[ $_arg_version == "on" ]]; then
-    echo $_version
-    exit 0
+  if [[ $_arg_version == "on" ]]
+  then echo $_version; exit 0
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_link == "on" ]]; then
-    ln --verbose --symbolic "$(realpath "$0")" "$HOME/.local/bin/dynb"
-    exit 0
+  if [[ $_arg_link == "on" ]]
+  then ln --verbose --symbolic "$(realpath "$0")" "$HOME/.local/bin/dynb"; exit 0
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_reset == "on" ]]; then
-    rm --verbose "$_statusFile"
-    exit 0
+  if [[ $_arg_reset == "on" ]]
+  then rm --verbose "$_statusFile"; exit 0
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_debug == "on" ]]; then
-    _debug=1
+  if [[ $_arg_debug == "on" ]]
+  then _debug=1
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_update_method != "" ]]; then
-    DYNB_UPDATE_METHOD=$_arg_update_method
+  if [[ $_arg_update_method != "" ]]
+  then DYNB_UPDATE_METHOD=$_arg_update_method
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_ip_mode != "" ]]; then
-    DYNB_IP_MODE=$_arg_ip_mode
+  if [[ $_arg_ip_mode != "" ]]
+  then DYNB_IP_MODE=$_arg_ip_mode
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_domain != "" ]]; then
-    DYNB_DYN_DOMAIN=$_arg_domain
+  if [[ $_arg_domain != "" ]]
+  then DYNB_DYN_DOMAIN=$_arg_domain
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_service_provider != "" ]]; then
-    DYNB_SERVICE_PROVIDER=$_arg_service_provider
+  if [[ $_arg_service_provider != "" ]]
+  then DYNB_SERVICE_PROVIDER=$_arg_service_provider
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_username != "" ]]; then
-    DYNB_USERNAME=$_arg_username
+  if [[ $_arg_username != "" ]]
+  then DYNB_USERNAME=$_arg_username
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_password != "" ]]; then
-    DYNB_PASSWORD=$_arg_password
+  if [[ $_arg_password != "" ]]
+  then DYNB_PASSWORD=$_arg_password
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_token != "" ]]; then
-    DYNB_TOKEN=$_arg_token
+  if [[ $_arg_token != "" ]]
+  then DYNB_TOKEN=$_arg_token
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_interval != "" ]]; then
-    DYNB_INTERVAL=$_arg_interval
+  if [[ $_arg_interval != "" ]]
+  then DYNB_INTERVAL=$_arg_interval
   fi
 
-  if [[ -z $DYNB_INTERVAL ]]; then
-    _loopMode=0
-  elif [[ $DYNB_INTERVAL -lt _minimum_looptime ]]; then
+  if [[ -z $DYNB_INTERVAL ]]
+  then _loopMode=0
+  elif [[ $DYNB_INTERVAL -lt _minimum_looptime ]]
+  then
     DYNB_INTERVAL=$_minimum_looptime
     _loopMode=1
-  else
-    _loopMode=1
+  else _loopMode=1
   fi
-  if [[ $_network_interface != "" ]]; then
-    _interface_str="--interface $_network_interface"
+  if [[ $_network_interface != "" ]]
+  then _interface_str="--interface $_network_interface"
   fi
 
-  if [[ $DYNB_IP_MODE == d* ]]; then
+  if [[ $DYNB_IP_MODE == d* ]]
+  then
     _is_IPv4_enabled=true
     _is_IPv6_enabled=true
   fi
-  if [[ $DYNB_IP_MODE == *4* ]]; then
-    _is_IPv4_enabled=true
+  if [[ $DYNB_IP_MODE == *4* ]]
+  then _is_IPv4_enabled=true
   fi
-  if [[ $DYNB_IP_MODE == *6* ]]; then
-    _is_IPv6_enabled=true
+  if [[ $DYNB_IP_MODE == *6* ]]
+  then _is_IPv6_enabled=true
   fi
 
-  if [[ $DYNB_DEBUG == true ]]; then
-    _debug=1
+  if [[ $DYNB_DEBUG == true ]]
+  then _debug=1
   fi
   # shellcheck disable=SC2154
-  if [[ -n $DYNB_IPv4_CHECK_SITE ]]; then
-    _ipv4_checker=$DYNB_IPv4_CHECK_SITE
+  if [[ -n $DYNB_IPv4_CHECK_SITE ]]
+  then _ipv4_checker=$DYNB_IPv4_CHECK_SITE
   fi
   # shellcheck disable=SC2154
-  if [[ -n $DYNB_IPv6_CHECK_SITE ]]; then
-    _ipv6_checker=$DYNB_IPv6_CHECK_SITE
+  if [[ -n $DYNB_IPv6_CHECK_SITE ]]
+  then _ipv6_checker=$DYNB_IPv6_CHECK_SITE
   fi
-  if [[ -n $DYNB_DNS_CHECK_SERVER ]]; then
-    _DNS_checkServer=$DYNB_DNS_CHECK_SERVER
+  if [[ -n $DYNB_DNS_CHECK_SERVER ]]
+  then _DNS_checkServer=$DYNB_DNS_CHECK_SERVER
   fi
   return 0
 }
@@ -619,7 +641,8 @@ function handleParameters() {
 ## dependencies ##
 ##################
 
-function checkDependencies() {
+function checkDependencies
+{
   failCounter=0
   for i in curl dig; do
     if ! command -v $i >/dev/null 2>&1; then
@@ -638,7 +661,8 @@ function checkDependencies() {
   fi
 }
 
-function doUnsets() {
+function doUnsets
+{
   unset _network_interface
   unset _DNS_checkServer
   unset _dns_records
@@ -666,66 +690,68 @@ function doUnsets() {
   unset DYNB_DEBUG
 }
 
-function doDomrobotUpdates() {
+function doDomrobotUpdates
+{
   getMainDomain
   fetchDNSRecords
-  if [[ $_is_IPv4_enabled == true ]]; then
+  if [[ $_is_IPv4_enabled == true ]]
+  then
     ipHasChanged 4
-    if [[ $? == 1 ]]; then
-      updateRecord 4
-    else
-      debugMessage "Skip IPv4 record update, it is already up to date"
+    if [[ $? == 1 ]]
+    then updateRecord 4
+    else debugMessage "Skip IPv4 record update, it is already up to date"
     fi
   fi
-  if [[ $_is_IPv6_enabled == true ]]; then
+  if [[ $_is_IPv6_enabled == true ]]
+  then
     ipHasChanged 6
-    if [[ $? == 1 ]]; then
-      updateRecord 6
-    else
-      debugMessage "Skip IPv6 record update, it is already up to date"
+    if [[ $? == 1 ]]
+    then updateRecord 6
+    else debugMessage "Skip IPv6 record update, it is already up to date"
     fi
   fi
 }
 
-function doDynDNS2Updates() {
+function doDynDNS2Updates
+{
   changed=0
-  if [[ $_is_IPv4_enabled == true ]]; then
-    ipHasChanged 4
-    ((changed += $?))
+  if [[ $_is_IPv4_enabled == true ]]
+  then ipHasChanged 4; ((changed += $?))
   fi
-  if [[ $_is_IPv6_enabled == true ]]; then
-    ipHasChanged 6
-    ((changed += $?))
+  if [[ $_is_IPv6_enabled == true ]]
+  then ipHasChanged 6; ((changed += $?))
   fi
-  if [[ $changed -gt 0 ]]; then
-    if checkStatus; then
+  if [[ $changed -gt 0 ]]
+  then
+    if checkStatus
+    then
       debugMessage "checkStatus has no errors, try update"
-      if dynupdate; then
-        debugMessage "DynDNS2 update success"
+      if dynupdate
+      then debugMessage "DynDNS2 update success"
       else
         debugMessage "Save new status after dynupdate has failed"
         setStatus "$_response" "$(date +%s)" $((_errorCounter += 1)) "$DYNB_DYN_DOMAIN" "${DYNB_USERNAME}" "${DYNB_PASSWORD}${DYNB_TOKEN}"
       fi
-    else
-      debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
+    else debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
     fi
-  else
-    debugMessage "Skip DynDNS2 update, IPs are up to date or there is a connection problem"
+  else debugMessage "Skip DynDNS2 update, IPs are up to date or there is a connection problem"
   fi
 }
 
-function doUpdates() {
-  if [[ $DYNB_UPDATE_METHOD == "domrobot" ]]; then
-    doDomrobotUpdates
+function doUpdates
+{
+  if [[ $DYNB_UPDATE_METHOD == "domrobot" ]]
+  then doDomrobotUpdates
   fi
 
-  if [[ $DYNB_UPDATE_METHOD == "dyndns" ]]; then
-    doDynDNS2Updates
+  if [[ $DYNB_UPDATE_METHOD == "dyndns" ]]
+  then doDynDNS2Updates
   fi
 }
 
-function ipv6_is_not_working() {
-  curl --ipv6 --head --silent --max-time 1 "$_internet_connectivity_test_server" > /dev/null
+function ipv6_is_not_working
+{
+  curl --ipv6 --head --silent --max-time 1 $_internet_connectivity_test_server > /dev/null
   status_code=$?
   if [[ $status_code -gt 0 ]]
   then return 0
@@ -733,8 +759,9 @@ function ipv6_is_not_working() {
   fi
 }
 
-function ipv4_is_not_working() {
-  curl --ipv4 --head --silent --max-time 1 "$_internet_connectivity_test_server" > /dev/null
+function ipv4_is_not_working
+{
+  curl --ipv4 --head --silent --max-time 1 $_internet_connectivity_test_server > /dev/null
   status_code=$?
   if [[ $status_code -gt 0 ]]
   then return 0
@@ -742,7 +769,8 @@ function ipv4_is_not_working() {
   fi
 }
 
-function check_internet_connection() {
+function check_internet_connection
+{
   if [[ $_is_IPv4_enabled == true ]]
   then
     if ipv4_is_not_working
@@ -761,25 +789,26 @@ function check_internet_connection() {
   fi
 }
 
-#################
-## MAIN method ##
-#################
-function dynb() {
+function main
+{
   # shellcheck disable=SC1091,SC1090
   source "$(dirname "$(realpath "$0")")/dynb-parsing.sh"
 
   # shellcheck source=.env
-  if test -f "$_configFile"; then
+  if test -f "$_configFile"
+  then
     # shellcheck disable=SC1091
     source "$_configFile"
   else
     alternativeConfig="$(dirname "$(realpath "$0")")/.env"
-    if test -f "$alternativeConfig"; then
+    if test -f "$alternativeConfig"
+    then
       # shellcheck disable=SC1091
       source "$alternativeConfig"
     fi
   fi
-  if test -f "$_statusFile"; then
+  if test -f "$_statusFile"
+  then
     debugMessage "read previous status file"
     # shellcheck disable=SC1090
     source "$_statusFile"
@@ -790,21 +819,19 @@ function dynb() {
   checkDependencies
   check_internet_connection
 
-  if loopMode; then
-    while :; do
+  if loopMode
+  then
+    while : 
+    do
       doUpdates
       sleep $DYNB_INTERVAL
     done
-  else
-    doUpdates
+  else doUpdates
   fi
 
   doUnsets
   return 0
 }
-######################
-## END MAIN section ##
-######################
 
-dynb "${@}"
+main "${@}"
 exit $?
