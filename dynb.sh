@@ -421,8 +421,7 @@ function checkStatus
       if [[ "$_statusHostname" == "$DYNB_DYN_DOMAIN" && ("$_statusUsername" == "$DYNB_USERNAME" || $_statusUsername == "$DYNB_TOKEN") ]]; then
         errorMessage "Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
         return 1
-      else
-        rm "$_statusFile"
+      else rm "$_statusFile"
       fi
       return 0
       ;;
@@ -430,8 +429,7 @@ function checkStatus
       if [[ "$_statusUsername" == "$DYNB_USERNAME" && "$_statusPassword" == "$DYNB_PASSWORD" ]]; then
         errorMessage "Invalid username password combination."
         return 1
-      else
-        rm "$_statusFile"
+      else rm "$_statusFile"
       fi
       return 0
       ;;
@@ -455,20 +453,20 @@ function checkStatus
       ;;
     911 | 5*)
       delta=$(($(date +%s) - _eventTime))
-      if [[ $delta -lt 1800 ]]; then
+      if [[ $delta -lt 1800 ]]
+      then
         errorMessage "$_status: The provider currently has an fatal error. DynB will wait for next update until 30 minutes have passed since last request, $(date --date=@$delta -u +%M) minutes already passed."
         return 1
-      else
-        rm "$_statusFile"
+      else rm "$_statusFile"
       fi
       return 0
       ;;
     *)
-      if [[ _errorCounter -gt 1 ]]; then
+      if [[ _errorCounter -gt 1 ]]
+      then
         errorMessage "An unknown response code has repeatedly been received. $_response"
         return 1
-      else
-        return 0
+      else return 0
       fi
       ;;
   esac
@@ -483,7 +481,9 @@ function ipHasChanged
     4)
       remote_ip=$(getRemoteIP 4 $_ipv4_checker)
       if ! is_IPv4_address "$remote_ip"
-      then errorMessage "The response from the IP check server is not an IPv4 address: $remote_ip"; return 0
+      then
+        errorMessage "The response from the IP check server is not an IPv4 address: $remote_ip"
+        return 1
       fi
       if [[ $DYNB_UPDATE_METHOD == domrobot ]]
       then dns_ip=$(getDNSIP A)
@@ -493,7 +493,9 @@ function ipHasChanged
         else dig_response=$(dig in a +short "$DYNB_DYN_DOMAIN")
         fi
         if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]
-        then errorMessage "DNS request failed $dig_response"; return 0
+        then
+          errorMessage "DNS request failed $dig_response"
+          return 1
         fi
         # If the dns resolver lists multiple records in the answer section we filter the first line
         # using short option "-n" and not "--lines" because of alpines limited BusyBox head command
@@ -507,19 +509,20 @@ function ipHasChanged
       if ! is_IPv6_address "$remote_ip"
       then
         errorMessage "The response from the IP check server is not an IPv6 address: $remote_ip"
-        return 0
+        return 1
       fi
-      if [[ $DYNB_UPDATE_METHOD == domrobot ]]; then
-        dns_ip=$(getDNSIP AAAA)
+      if [[ $DYNB_UPDATE_METHOD == domrobot ]]
+      then dns_ip=$(getDNSIP AAAA)
       else
-        if [[ -n $_DNS_checkServer ]]; then
-          dig_response=$(dig @"${_DNS_checkServer}" in aaaa +short "$DYNB_DYN_DOMAIN")
-        else
-          dig_response=$(dig in aaaa +short "$DYNB_DYN_DOMAIN")
+        if [[ -n $_DNS_checkServer ]]
+        then dig_response=$(dig @"${_DNS_checkServer}" in aaaa +short "$DYNB_DYN_DOMAIN")
+        else dig_response=$(dig in aaaa +short "$DYNB_DYN_DOMAIN")
         fi
-        if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]; then
-          errorMessage "DNS request failed $dig_response"
-          return 0
+        exitcode=$?
+        if [[ $exitcode -gt 0 ]]
+        then
+          errorMessage "DNS request failed with exit code: $exitcode $dig_response"
+          return 1
         fi
         # If the dns server lists multiple records in the answer section we filter the first line
         dns_ip=$(echo "$dig_response" | head -n 1)
@@ -531,19 +534,15 @@ function ipHasChanged
   esac
 
   if [[ "$remote_ip" == "$dns_ip" ]]
-  then return 0
+  then return 1
   else
     case ${ip_version} in
     4) infoMessage "New IPv4: $_new_IPv4 old was: $dns_ip";;
     6) infoMessage "New IPv6: $_new_IPv6 old was: $dns_ip";;
     esac
-    return 1
+    return 0
   fi
 }
-
-################
-## parameters ##
-################
 
 function handleParameters
 {
@@ -556,7 +555,7 @@ function handleParameters
   then ln --verbose --symbolic "$(realpath "$0")" "$HOME/.local/bin/dynb"; exit 0
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_reset == "on" ]]
+  if [[ $_arg_reset == "on" ]] && test -f "$_statusFile"
   then rm --verbose "$_statusFile"; exit 0
   fi
   # shellcheck disable=SC2154
@@ -637,27 +636,25 @@ function handleParameters
   return 0
 }
 
-##################
-## dependencies ##
-##################
-
 function checkDependencies
 {
   failCounter=0
   for i in curl dig; do
-    if ! command -v $i >/dev/null 2>&1; then
+    if ! command -v $i >/dev/null 2>&1
+    then
       errorMessage "could not find \"$i\", DynB depends on it. "
       ((failCounter++))
     fi
   done
   [[ -x $(command -v jq 2>/dev/null) ]] || {
-    if [[ $DYNB_UPDATE_METHOD != dyndns* ]]; then
+    if [[ $DYNB_UPDATE_METHOD != dyndns* ]]
+    then
       echo "This script depends on jq and it is not available." >&2
       ((failCounter++))
     fi
   }
-  if [[ failCounter -gt 0 ]]; then
-    exit 1
+  if [[ failCounter -gt 0 ]]
+  then exit 1
   fi
 }
 
@@ -696,16 +693,14 @@ function doDomrobotUpdates
   fetchDNSRecords
   if [[ $_is_IPv4_enabled == true ]]
   then
-    ipHasChanged 4
-    if [[ $? == 1 ]]
+    if ipHasChanged 4
     then updateRecord 4
     else debugMessage "Skip IPv4 record update, it is already up to date"
     fi
   fi
   if [[ $_is_IPv6_enabled == true ]]
   then
-    ipHasChanged 6
-    if [[ $? == 1 ]]
+    if ipHasChanged 6
     then updateRecord 6
     else debugMessage "Skip IPv6 record update, it is already up to date"
     fi
@@ -715,11 +710,11 @@ function doDomrobotUpdates
 function doDynDNS2Updates
 {
   changed=0
-  if [[ $_is_IPv4_enabled == true ]]
-  then ipHasChanged 4; ((changed += $?))
+  if [[ $_is_IPv4_enabled == true ]] && ipHasChanged 4
+  then ((changed += 1))
   fi
-  if [[ $_is_IPv6_enabled == true ]]
-  then ipHasChanged 6; ((changed += $?))
+  if [[ $_is_IPv6_enabled == true ]] && ipHasChanged 6
+  then ((changed += 1))
   fi
   if [[ $changed -gt 0 ]]
   then
@@ -742,18 +737,16 @@ function doUpdates
 {
   if [[ $DYNB_UPDATE_METHOD == "domrobot" ]]
   then doDomrobotUpdates
-  fi
-
-  if [[ $DYNB_UPDATE_METHOD == "dyndns" ]]
+  elif [[ $DYNB_UPDATE_METHOD == "dyndns" ]]
   then doDynDNS2Updates
   fi
 }
 
 function ipv6_is_not_working
 {
-  curl --ipv6 --head --silent --max-time 1 $_internet_connectivity_test_server > /dev/null
+  curl --ipv6 --head --silent --max-time 5 $_internet_connectivity_test_server > /dev/null
   status_code=$?
-  if [[ $status_code -gt 0 ]]
+  if test $status_code -gt 0
   then return 0
   else return 1
   fi
@@ -761,9 +754,9 @@ function ipv6_is_not_working
 
 function ipv4_is_not_working
 {
-  curl --ipv4 --head --silent --max-time 1 $_internet_connectivity_test_server > /dev/null
+  curl --ipv4 --head --silent --max-time 5 $_internet_connectivity_test_server > /dev/null
   status_code=$?
-  if [[ $status_code -gt 0 ]]
+  if test $status_code -gt 0
   then return 0
   else return 1
   fi
