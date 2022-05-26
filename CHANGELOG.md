@@ -1,6 +1,26 @@
 # Changelog
 
 
+## 0.3.2 (2022-05-26)
+
+### Features
+
+* ✨ add tzdata to Dockerfile for timezone config. [Eduard Veit]
+
+  You can now set your timezone with the environment variable
+  `TZ="Europe/Berlin"`
+
+
+## 0.3.1 (2022-05-26)
+
+### Fix
+
+* 🐛 curl/libcurl doesn't support dns-server option. [Eduard Veit]
+
+  the latest alpine we are using for the docker image
+  does also drops the support for that option like debian/ubuntu/etc
+
+
 ## 0.3.0 (2022-05-26)
 
 ### Features
