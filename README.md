@@ -155,17 +155,15 @@ services:
     image: ev21/dynb
     container_name: dynb
     network_mode: host
-    build:
-      context: .
-      dockerfile: ./Dockerfile
     environment:
       - DYNB_DYN_DOMAIN=dyndns.example.com
-      - DYNB_SERVICE_PROVIDER=inwx
+      - DYNB_SERVICE_PROVIDER=desec
       - DYNB_UPDATE_METHOD=dyndns
       - DYNB_IP_MODE=64
       - DYNB_USERNAME=User42
       - DYNB_PASSWORD=SuperSecretPassword
       - DYNB_INTERVAL=60
+      - TZ=Europe/Berlin
 ```
 
 ## environment variables

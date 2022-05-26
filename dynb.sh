@@ -66,7 +66,7 @@ _response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
-_version=0.3.1
+_version=0.3.2
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
@@ -812,6 +812,7 @@ function main
     while : 
     do
       doUpdates
+      debugMessage "wait $DYNB_INTERVAL seconds until next check"
       sleep $DYNB_INTERVAL
     done
   else doUpdates

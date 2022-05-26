@@ -7,7 +7,8 @@ apk add \
 bash \
 curl \
 jq \
-bind-tools
+bind-tools \
+tzdata
 
 WORKDIR /usr/src/app
 
