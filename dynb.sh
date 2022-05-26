@@ -66,7 +66,7 @@ _response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
-_version=0.3.0
+_version=0.3.1
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
@@ -209,17 +209,12 @@ function getRemoteIP
 {
   local ip_version=$1
   local ip_check_server=$2
-  if [[ -n $_DNS_checkServer ]]
-  then
-    curl --silent "$_interface_str" --user-agent "$_userAgent" \
-      --ipv"${ip_version}" --dns-servers "$_DNS_checkServer" --location "${ip_check_server}"
-  else
-    curl --silent "$_interface_str" --user-agent "$_userAgent" \
-      --ipv"${ip_version}" --location "${ip_check_server}"
-  fi
+  curl --silent "$_interface_str" --user-agent "$_userAgent" \
+    --ipv"${ip_version}" --location "${ip_check_server}"
+  local curls_status_code=$?
   # shellcheck disable=2181
-  if [[ $? -gt 0 ]]; then
-    errorMessage "IPCheck (getRemoteIP ${1}) request failed"
+  if [[ $curls_status_code -gt 0 ]]; then
+    errorMessage "IPCheck (getRemoteIP $ip_version) request failed"
     exit 1
   fi
 }
