@@ -1,127 +1,114 @@
 # Changelog
 
 
-## 0.2.0 (2021-09-24)
+## 0.3.0 (2022-05-26)
 
-### New
+### Features
 
-* :sparkles: enable parameter extensions for `docker run --interactive` [Eduard Veit]
+* ✨ validate ip address respons from ip check web service. [Eduard Veit]
 
-* :sparkles: add pre-commit hooks for markdown. [Eduard Veit]
+* ✨ check internet connection for selected ip versions. [Eduard Veit]
 
-* :sparkles: change git hooks and add shfmt. [Eduard Veit]
+* 🎨 colorful info, debug and error messages. [Eduard Veit]
 
-* :sparkles: add pre-commit git hook for shellcheck. [Eduard Veit]
+### Fix
 
-### Changes
-
-* :wrench: remove md-toc from pre-commit. [Eduard Veit]
-
-* :wrench: handle dns server selection. [Eduard Veit]
+* Abort on all dig errors. [Eduard Veit]
 
 ### Documentation
 
-* :memo: update CHANGELOG.md. [Eduard Veit]
+* 📝 add labels to Dockerfile. [Eduard Veit]
 
-* :memo: document docker parameters. [Eduard Veit]
 
-* :memo: change default dns server setting. [Eduard Veit]
+## 0.2.0 (2021-09-24)
 
-* :memo: update CHANGELOG. [Eduard Veit]
+### Features
 
-* :memo: update README.md. [Eduard Veit]
+* ✨ enable parameter extensions for `docker run --interactive` [Eduard Veit]
 
-### Other
+### Changed
 
-* :art: lint README.md. [Eduard Veit]
+* Handle dns server selection. [Eduard Veit]
 
-* :art: add shfmt params to pre-commit check. [Eduard Veit]
+### Documentation
 
-* :art: fix shell style. [Eduard Veit]
+* 📝 update CHANGELOG.md. [Eduard Veit]
 
-* :recycle: seperate parsing logic. [Eduard Veit]
+* 📝 document docker parameters. [Eduard Veit]
 
-* :recycle: normalizing pre-commit configuration to a top-level map. [Eduard Veit]
+* 📝 change default dns server setting. [Eduard Veit]
 
-* :recycle: refactorings. [Eduard Veit]
+* 📝 update CHANGELOG. [Eduard Veit]
 
-* Refactor: :recycle: remove unused help message. [Eduard Veit]
+* 📝 update README.md. [Eduard Veit]
 
 
 ## 0.1.2 (2021-04-23)
 
 ### Documentation
 
-* :memo: document environment variables. [Eduard Veit]
-
-### Other
-
-* :recycle: refactor: method extractions and other beautifications. [Eduard Veit]
+* 📝 document environment variables. [Eduard Veit]
 
 
 ## 0.1.1 (2021-04-23)
 
 ### Fix
 
-* :bug: fix loop and error handling in case of connection issues. [Eduard Veit]
+* 🐛 fix loop and error handling in case of connection issues. [Eduard Veit]
 
 
 ## 0.1.0 (2021-04-22)
 
-### New
+### Features
 
-* :sparkles: add Dockerfile. [Eduard Veit]
+* ✨ add Dockerfile. [Eduard Veit]
 
-* :sparkles: add loop mode. [Eduard Veit]
+* ✨ add loop mode. [Eduard Veit]
 
-* :sparkles: add support for Duck DNS as DynDNS2 provider. [Eduard Veit]
+* ✨ add support for Duck DNS as DynDNS2 provider. [Eduard Veit]
 
-* :sparkles: add support for deSEC as DynDNS2 provider. [Eduard Veit]
+* ✨ add support for deSEC as DynDNS2 provider. [Eduard Veit]
 
-* :sparkles: add completion. [Eduard Veit]
+* ✨ add completion. [Eduard Veit]
 
-  :sparkles: add man page
+  ✨ add man page
 
-* :sparkles: replace getopt with argbash. [Eduard Veit]
+* 🔃 replace getopt with argbash. [Eduard Veit]
 
-* :sparkles: add interpretaton of status codes and act accordingly. [Eduard Veit]
+* ✨ add interpretaton of status codes and act accordingly. [Eduard Veit]
 
-* :sparkles: make network interface configurable. [Eduard Veit]
+* ✨ make network interface configurable. [Eduard Veit]
 
-* :sparkles: add DynDNS2 support for dynv6.com. [Eduard Veit]
+* ✨ add DynDNS2 support for dynv6.com. [Eduard Veit]
 
-* :sparkles: add .gitchangelog.rc. [Eduard Veit]
+### Added
 
-* :sparkles: add dynb.sh. [Eduard Veit]
+* 📝 README.md. [Eduard Veit]
+
+* ✨ dynb.sh. [Eduard Veit]
+
+### Changed
+
+* 🔃 rename environment variables. [Eduard Veit]
 
 ### Fix
 
-* :bug: fix sourcing of config file. [Eduard Veit]
+* 🐛 fix error handling. [Eduard Veit]
 
-  :recycle: do some shellcheck fixes
+* 🐛 fix sourcing of config file. [Eduard Veit]
+
+  ♻️ do some shellcheck fixes
 
 ### Documentation
 
-* :memo: document example of an docker-compose.yml file. [Eduard Veit]
+* 📝 document example of an docker-compose.yml file. [Eduard Veit]
 
-* :memo: document loop mode and dig as requirement. [Eduard Veit]
+* 📝 document `loop mode` and mention `dig` as requirement. [Eduard Veit]
 
-* :memo: update example of .env in README.md. [Eduard Veit]
+* 📝 update example of .env in README.md. [Eduard Veit]
 
-* :memo: add CHANGELOG.md. [Eduard Veit]
+* 📝 CHANGELOG.md. [Eduard Veit]
 
-* :memo: add example.env. [Eduard Veit]
-
-* :memo: write README.md. [Eduard Veit]
-
-### Other
-
-* :recycle: refactor: rename environment variables. [Eduard Veit]
-
-* :recycle: refactor, fix and debug error handling. [Eduard Veit]
-
-* :recycle: refactor main code. [Eduard Veit]
-
-* Initial commit. [EV21]
+* 📝 add example.env. [Eduard Veit]
 
 
