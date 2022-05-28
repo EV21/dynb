@@ -79,7 +79,7 @@ DYNB_SERVICE_PROVIDER=inwx
 ## update method options: domrobot, dyndns
 DYNB_UPDATE_METHOD=domrobot
 
-## ip mode could be either: 4, 6 or dual for dualstack
+## ip mode could be either: 4, 6 or 64 for dualstack
 DYNB_IP_MODE=64
 
 ## If you are using the DomRobot RPC-API enter your credentials for the web interface login here
@@ -155,15 +155,25 @@ services:
     image: ev21/dynb
     container_name: dynb
     network_mode: host
+    stdin_open: true
+    tty: true
     environment:
       - DYNB_DYN_DOMAIN=dyndns.example.com
+      # Providers: deSec, duckDNS, dynv6, inwx
       - DYNB_SERVICE_PROVIDER=desec
+      # Possible update methods are: dyndns, domrobot
       - DYNB_UPDATE_METHOD=dyndns
+      # IP modes: 4 (IPv4 only), 6 (IPv6 only), 64 both
       - DYNB_IP_MODE=64
+      # If your provider uses tokens use DYNB_TOKEN instead of DYNB_USERNAME and DYNB_PASSWORD
       - DYNB_USERNAME=User42
       - DYNB_PASSWORD=SuperSecretPassword
-      - DYNB_INTERVAL=60
+      # The interval in seconds is the time the script waits before executing it again
+      - DYNB_INTERVAL=300
+      # TZ: Timezone setting for correct log time
       - TZ=Europe/Berlin
+      # TERM: For colorful console output (attached mode)
+      - TERM=xterm-256color
 ```
 
 ## environment variables
