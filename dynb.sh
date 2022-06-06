@@ -284,7 +284,7 @@ function dynupdate
       ;;
     DuckDNS* | duckdns*)
       dyndns_update_url="${DUCKDNS_DYNDNS_UPDATE_URL}"
-      myip_str=ipv4
+      myip_str=ip
       myipv6_str=ipv6
       ;;
     *)
