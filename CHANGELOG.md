@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 0.3.3 (2022-06-07)
+
+### Fix
+
+* Wrong parameter name for DuckDNS. [Eduard Veit]
+
+### Documentation
+
+* 📝 add comments to docker-compose.yml example. [Eduard Veit]
+
+
 ## 0.3.2 (2022-05-26)
 
 ### Features
