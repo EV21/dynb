@@ -523,7 +523,7 @@ function ipHasChanged
         dns_ip=$(echo "$dig_response" | head -n 1)
       fi
       _new_IPv6=$remote_ip
-      debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv4 from DNS: $dns_ip"
+      debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv6 from DNS: $dns_ip"
       ;;
     *) ;;
   esac
