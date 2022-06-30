@@ -258,8 +258,7 @@ function updateRecord
   fi
 }
 
-# using DynDNS2 protocol
-function dynupdate
+function select_update_base_url
 {
   # default parameter values
   myip_str=myip
@@ -292,26 +291,18 @@ function dynupdate
       exit 1
       ;;
   esac
+}
 
-  # pre encode ip parameters
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]; then
-    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}&${myipv6_str}=${_new_IPv6}"
-  fi
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]; then
-    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}"
-  fi
-  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]; then
-    dyndns_update_url="${dyndns_update_url}${myipv6_str}=${_new_IPv6}"
-  fi
-  debugMessage "Update URL was: $dyndns_update_url"
-
-  ## request ##
-  case $DYNB_SERVICE_PROVIDER in
+function send_request
+{
+    case $DYNB_SERVICE_PROVIDER in
     inwx* | INWX*)
       _response=$(curl --silent "$_interface_str" \
         --user-agent "$_userAgent" \
         --user "$DYNB_USERNAME":"$DYNB_PASSWORD" \
         "${dyndns_update_url}")
+      analyse_response
+      return $?
       ;;
     deSEC* | desec* | dedyn*)
       _response=$(curl --silent "$_interface_str" \
@@ -319,16 +310,22 @@ function dynupdate
         --header "Authorization: Token $DYNB_TOKEN" \
         --get --data-urlencode "hostname=$DYNB_DYN_DOMAIN" \
         "${dyndns_update_url}")
+      analyse_response
+      return $?
       ;;
     dynv6* | duckDNS* | duckdns*)
       _response=$(
         curl --silent "$_interface_str" \
           --user-agent "$_userAgent" \
-          "${dyndns_update_url}"
-      )
+          "${dyndns_update_url}")
+      analyse_response
+      return $?
       ;;
   esac
+}
 
+function analyse_response
+{
   case $_response in
     good* | OK* | "addresses updated")
       if [[ $_response == "good 127.0.0.1" ]]; then
@@ -394,6 +391,32 @@ function dynupdate
       fi
       ;;
   esac
+}
+
+# using DynDNS2 protocol
+function dynupdate
+{
+  select_update_base_url
+
+  # pre encode ip parameters
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]
+  then
+    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}&${myipv6_str}=${_new_IPv6}"
+    send_request
+  fi
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]
+  then
+    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}"
+    send_request
+  fi
+  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]
+  then
+    dyndns_update_url="${dyndns_update_url}${myipv6_str}=${_new_IPv6}"
+    send_request
+  fi
+  request_status=$?
+  debugMessage "Update URL was: $dyndns_update_url"
+  return $request_status
 }
 
 function setStatus
