@@ -332,25 +332,30 @@ function analyse_response
         errorMessage "$_response: Request ignored."
         return 1
       else
-        infoMessage "$_response: The DynDNS update has been executed."
+        infoMessage "The DynDNS update has been executed."
+        debugMessage "Response: $_response"
         _errorCounter=0
         return 0
       fi
       ;;
     nochg*)
-      infoMessage "$_response: Nothing has changed, IP addresses are still up to date."
+      infoMessage "Nothing has changed, IP addresses are still up to date."
+      debugMessage "Response: $_response"
       return 1
       ;;
     abuse)
-      errorMessage "$_response: Username is blocked due to abuse."
+      errorMessage "Username is blocked due to abuse."
+      debugMessage "Response: $_response"
       return 1
       ;;
-    badauth | 401)
-      errorMessage "$_response: Invalid username password combination."
+    *badauth* | 401)
+      errorMessage "Invalid token or username password combination."
+      debugMessage "Response: $_response"
       return 1
       ;;
     badagent)
-      errorMessage "$_response: Client disabled. Something is very wrong!"
+      errorMessage "Client disabled. Something is very wrong!"
+      debugMessage "Response: $_response"
       return 1
       ;;
     !donator)
@@ -365,8 +370,9 @@ function analyse_response
       errorMessage "$_response: Hostname $DYNB_DYN_DOMAIN is invalid"
       return 1
       ;;
-    nohost)
-      errorMessage "$_response: Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
+    *nohost*)
+      errorMessage "Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
+      debugMessage "Response: $_response"
       return 1
       ;;
     numhost)
@@ -383,7 +389,7 @@ function analyse_response
       ;;
     *)
       if [[ "$_response" == "$_status" ]]; then
-        errorMessage "An unknown response code has been received. $_response"
+        errorMessage "An unknown response code has been received: $_response"
         return 1
       else
         errorMessage "unknown respnse code: $_response"
@@ -431,7 +437,7 @@ function checkStatus
     nochg*)
       if [[ _errorCounter -gt 1 ]]; then
         errorMessage "The update client was spamming unnecessary update requests, something might be wrong with your IP-Check site."
-        errorMessage "Fix your config an then delete $_statusFile or restart your docker container"
+        errorMessage "Fix your config and then delete $_statusFile or restart your docker container"
         return 1
       fi
       ;;
