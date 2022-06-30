@@ -23,14 +23,14 @@ IPv4 (A) and IPv6 (AAAA) record updates are supported.
 
 The following update methods are currently implemented:
 
-| Provider | API | TTL in seconds | Credentials | own domain via NS record | free (sub-) domain |
-| -------- | --- | -------------- | ----------- | - | - |
-| INWX.com | Domrobot JSON-RPC-API | 300 | customer login `username` & `password`. Mobile TAN (OTP) is currently not supported by DynB. | ✔️ | ⛔ choose one of your owned domains |
-| INWX.com | DynDNS2 | 60  | specific dyndns `username` & `password` | ✔️ | ⛔ choose one of your owned domains per account |
-| deSEC.io (dedyn.io) | DynDNS2 | 60 | `token` | ✔️ | ✔️ |
-| DuckDNS.org | DynDNS2 | 60 | `token` | ⛔ | ✔️ |
-| dynv6.com | DynDNS2 | 60 | `token` | ✔️ | ✔️ |
-| ddnss.de | DynDNS2 | 10 | update key as `token` | ⛔ | ✔️ |
+| Provider            | API                   | TTL in seconds | Credentials                                                                                  | own domain via NS record | free (sub-) domain                             |
+|---------------------|-----------------------|----------------|----------------------------------------------------------------------------------------------|--------------------------|------------------------------------------------|
+| INWX.com            | Domrobot JSON-RPC-API | 300            | customer login `username` & `password`. Mobile TAN (OTP) is currently not supported by DynB. | ✔️                       | ⛔ choose one of your owned domains             |
+| INWX.com            | DynDNS2               | 60             | specific dyndns `username` & `password`                                                      | ✔️                       | ⛔ choose one of your owned domains per account |
+| deSEC.io (dedyn.io) | DynDNS2               | 60             | `token`                                                                                      | ✔️                       | ✔️                                             |
+| DuckDNS.org         | DynDNS2               | 60             | `token`                                                                                      | ⛔                        | ✔️                                             |
+| dynv6.com           | DynDNS2               | 60             | `token`                                                                                      | ✔️                       | ✔️                                             |
+| ddnss.de            | DynDNS2               | 10             | update key as `token`                                                                        | ⛔                        | ✔️                                             |
 
 ## 📦 Requirements
 
@@ -173,9 +173,9 @@ services:
 ## environment variables
 
 | variable              | default value   | description                                                                                                    |
-| --------------------- | --------------- | -------------------------------------------------------------------------------------------------------------- |
+|-----------------------|-----------------|----------------------------------------------------------------------------------------------------------------|
 | DYNB_DYN_DOMAIN       | undefined       | required; `dyndns.example.com`                                                                                 |
-| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`, `ddnss`                                                                  |
+| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`, `ddnss`                                                         |
 | DYNB_UPDATE_METHOD    | undefined       | required; `dyndns` or `domrobot` (with inwx)                                                                   |
 | DYNB_IP_MODE          | undefined       | required; `4`, `6` or `64` for both                                                                            |
 | DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method                                                 |
