@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 0.3.4 (2022-06-30)
+
+### Features
+
+* ✨ add support for ddnss.de as DynDNS2 provider. [Eduard Veit]
+
+### Documentation
+
+* 📝 update providers in README. [Eduard Veit]
+
+
 ## 0.3.3 (2022-06-07)
 
 ### Fix
