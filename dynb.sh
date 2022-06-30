@@ -268,6 +268,7 @@ function select_update_base_url
   DESEC_DYNDNS_UPDATE_URL="https://update.dedyn.io/?"
   DUCKDNS_DYNDNS_UPDATE_URL="https://www.duckdns.org/update?domains=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
   DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
+  DDNSS_DYNDNS_UPDATE_URL="https://ddnss.de/upd.php?key=$DYNB_TOKEN&host=$DYNB_DYN_DOMAIN&"
 
   case $DYNB_SERVICE_PROVIDER in
     inwx* | INWX*)
@@ -285,6 +286,12 @@ function select_update_base_url
       dyndns_update_url="${DUCKDNS_DYNDNS_UPDATE_URL}"
       myip_str=ip
       myipv6_str=ipv6
+      ;;
+    ddnss*)
+      dyndns_update_url="${DDNSS_DYNDNS_UPDATE_URL}"
+      ## we are currently not using the syntax with ip auto detection
+      myip_str=ip
+      myipv6_str=ip6
       ;;
     *)
       errorMessage "$DYNB_SERVICE_PROVIDER is not supported"
@@ -313,7 +320,7 @@ function send_request
       analyse_response
       return $?
       ;;
-    dynv6* | duckDNS* | duckdns*)
+    dynv6* | duckDNS* | duckdns* | ddnss*)
       _response=$(
         curl --silent "$_interface_str" \
           --user-agent "$_userAgent" \
@@ -326,8 +333,8 @@ function send_request
 
 function analyse_response
 {
-  case $_response in
-    good* | OK* | "addresses updated")
+    case $_response in
+    good* | OK* | "addresses updated" | *Updated*hostname*)
       if [[ $_response == "good 127.0.0.1" ]]; then
         errorMessage "$_response: Request ignored."
         return 1
