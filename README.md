@@ -7,8 +7,6 @@ IPv4 (A) and IPv6 (AAAA) record updates are supported.
 <!-- TOC -->
 
 - [✨ Update Methods](#-update-methods)
-  - [APIs](#apis)
-  - [DynDNS2](#dyndns2)
 - [📦 Requirements](#-requirements)
 - [🚀 Installation](#-installation)
 - [⚙ Configuration](#-configuration)
@@ -25,18 +23,14 @@ IPv4 (A) and IPv6 (AAAA) record updates are supported.
 
 The following update methods are currently implemented:
 
-### APIs
-
-- INWX.com Domrobot JSON-RPC-API\
-  Limitations:
-  - minimum TTL is 300 (5 minutes)
-
-### DynDNS2
-
-- INWX.com
-- deSEC.io (dedyn.io)
-- DuckDNS.org
-- dynv6.com
+| Provider | API | TTL in seconds | Credentials | own domain via NS record | free (sub-) domain |
+| -------- | --- | -------------- | ----------- | - | - |
+| INWX.com | Domrobot JSON-RPC-API | 300 | customer login `username` & `password`. Mobile TAN (OTP) is currently not supported by DynB. | ✔️ | ⛔ choose one of your owned domains |
+| INWX.com | DynDNS2 | 60  | specific dyndns `username` & `password` | ✔️ | ⛔ choose one of your owned domains per account |
+| deSEC.io (dedyn.io) | DynDNS2 | 60 | `token` | ✔️ | ✔️ |
+| DuckDNS.org | DynDNS2 | 60 | `token` | ⛔ | ✔️ |
+| dynv6.com | DynDNS2 | 60 | `token` | ✔️ | ✔️ |
+| ddnss.de | DynDNS2 | 10 | update key as `token` | ⛔ | ✔️ |
 
 ## 📦 Requirements
 
@@ -57,7 +51,7 @@ or simply clone this repo
 git clone https://github.com/EV21/dynb.git
 ```
 
-If you want to add the script to you PATH, run :point_down:
+If you want to add the script to you PATH, run 👇
 
 ```shell
 bash dynb.sh --link
@@ -92,14 +86,14 @@ DYNB_TOKEN=
 
 ## 🏃 Run
 
-If you have a config file just run :point_down:
+If you have a config file just run 👇
 
 ```bash
 dynb
 ```
 
 Alternatively you can use parameters if your system meets the relevant requirements. This example shows the long form parameter, there are also short ones.\
-Call the help function :point_down:
+Call the help function 👇
 
 ```bash
 dynb --help
@@ -123,13 +117,13 @@ Just use the parameter `--interval 60` or the environment variable `DYNB_INTERVA
 
 ### crontab
 
-execute :point_down:
+execute 👇
 
 ```bash
 crontab -e
 ```
 
-then enter :point_down: to run dynb every five minutes.
+then add the following line 👇 to run dynb every five minutes.
 
 ```bash
 */5 * * * * $HOME/.local/bin/dynb >> $HOME/.local/share/dynb/dynb-cron.log
@@ -181,7 +175,7 @@ services:
 | variable              | default value   | description                                                                                                    |
 | --------------------- | --------------- | -------------------------------------------------------------------------------------------------------------- |
 | DYNB_DYN_DOMAIN       | undefined       | required; `dyndns.example.com`                                                                                 |
-| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`                                                                  |
+| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`, `ddnss`                                                                  |
 | DYNB_UPDATE_METHOD    | undefined       | required; `dyndns` or `domrobot` (with inwx)                                                                   |
 | DYNB_IP_MODE          | undefined       | required; `4`, `6` or `64` for both                                                                            |
 | DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method                                                 |
