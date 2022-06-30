@@ -813,11 +813,8 @@ function check_internet_connection
   fi
 }
 
-function main
+function read_config_file
 {
-  # shellcheck disable=SC1091,SC1090
-  source "$(dirname "$(realpath "$0")")/dynb-parsing.sh"
-
   # shellcheck source=.env
   if test -f "$_configFile"
   then
@@ -831,6 +828,15 @@ function main
       source "$alternativeConfig"
     fi
   fi
+}
+
+function main
+{
+  # shellcheck disable=SC1091,SC1090
+  source "$(dirname "$(realpath "$0")")/dynb-parsing.sh"
+
+  read_config_file
+
   if test -f "$_statusFile"
   then
     debugMessage "read previous status file"
