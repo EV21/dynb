@@ -315,7 +315,7 @@ function send_request
         --user "$DYNB_USERNAME":"$DYNB_PASSWORD" \
         "${dyndns_update_url}")
       analyse_response
-      return $?
+      status_code=$?
       ;;
     deSEC* | desec* | dedyn*)
       _response=$(curl --silent "$_interface_str" \
@@ -324,7 +324,7 @@ function send_request
         --get --data-urlencode "hostname=$DYNB_DYN_DOMAIN" \
         "${dyndns_update_url}")
       analyse_response
-      return $?
+      status_code=$?
       ;;
     [Ii][Pp][Vv]64* )
       _response=$(curl --silent "$_interface_str" \
@@ -334,7 +334,7 @@ function send_request
         --form "domain=$DYNB_DYN_DOMAIN" \
         "${dyndns_update_url}")
       analyse_response
-      return $?
+      status_code=$?
     ;;
     dynv6* | duckDNS* | duckdns* | ddnss*)
       _response=$(
@@ -342,9 +342,10 @@ function send_request
           --user-agent "$_userAgent" \
           "${dyndns_update_url}")
       analyse_response
-      return $?
+      status_code=$?
       ;;
   esac
+  return $status_code
 }
 
 function analyse_response
@@ -442,18 +443,20 @@ function dynupdate
   then
     dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}&${myipv6_str}=${_new_IPv6}"
     send_request
+    request_status=$?
   fi
   if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]
   then
     dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}"
     send_request
+    request_status=$?
   fi
   if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]
   then
     dyndns_update_url="${dyndns_update_url}${myipv6_str}=${_new_IPv6}"
     send_request
+    request_status=$?
   fi
-  request_status=$?
   debugMessage "Update URL was: $dyndns_update_url"
   return $request_status
 }
