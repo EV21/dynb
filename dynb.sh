@@ -470,7 +470,7 @@ function setStatus
 function checkStatus
 {
   case $_status in
-    nochg*)
+    *nochg*)
       if [[ _errorCounter -gt 1 ]]; then
         errorMessage "The update client was spamming unnecessary update requests, something might be wrong with your IP-Check site."
         errorMessage "Fix your config and then delete $_statusFile or restart your docker container"
@@ -485,8 +485,8 @@ function checkStatus
       fi
       return 0
       ;;
-    badauth | 401)
-      if [[ "$_statusUsername" == "$DYNB_USERNAME" && "$_statusPassword" == "$DYNB_PASSWORD" ]]; then
+    *badauth* | 401 | *Unauthorized*)
+      if [[ "$_statusUsername" == "$DYNB_USERNAME" &&  ("$_statusPassword" == "$DYNB_PASSWORD" || $_statusPassword == "$DYNB_TOKEN") ]]; then
         errorMessage "Invalid username password combination."
         return 1
       else rm "$_statusFile"
@@ -495,8 +495,7 @@ function checkStatus
       ;;
     badagent)
       errorMessage "Client is deactivated by provider."
-      echo "Fix your config and then manually remove $_statusFile to reset the client blockade."
-      echo "If it still fails file an issue at github or try another client :)"
+      echo "Please file an issue at GitHub or try another client :)"
       return 1
       ;;
     !donator)
@@ -511,11 +510,19 @@ function checkStatus
       echo "If it still fails file an issue at github or try another client :)"
       return 1
       ;;
-    911 | 5*)
+    911 | 5* | *'Too Many Requests'*)
       delta=$(($(date +%s) - _eventTime))
       if [[ $delta -lt 1800 ]]
       then
         errorMessage "$_status: The provider currently has an fatal error. DynB will wait for next update until 30 minutes have passed since last request, $(date --date=@$delta -u +%M) minutes already passed."
+        return 1
+      else rm "$_statusFile"
+      fi
+      return 0
+      ;;
+    *'Bad Request'*)
+      if [[ "$_statusUsername" == "$DYNB_USERNAME" &&  ("$_statusPassword" == "$DYNB_PASSWORD" || $_statusPassword == "$DYNB_TOKEN") ]]; then
+        errorMessage "Bad Request: Please check your credentials, maybe your token is invalid."
         return 1
       else rm "$_statusFile"
       fi
