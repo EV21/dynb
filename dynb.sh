@@ -269,6 +269,7 @@ function select_update_base_url
   DUCKDNS_DYNDNS_UPDATE_URL="https://www.duckdns.org/update?domains=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
   DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
   DDNSS_DYNDNS_UPDATE_URL="https://ddnss.de/upd.php?key=$DYNB_TOKEN&host=$DYNB_DYN_DOMAIN&"
+  IPV64NET_DYNDNS_UPDATE_URL="https://ipv64.net/nic/update?"
 
   case $DYNB_SERVICE_PROVIDER in
     inwx* | INWX*)
@@ -290,6 +291,11 @@ function select_update_base_url
     ddnss*)
       dyndns_update_url="${DDNSS_DYNDNS_UPDATE_URL}"
       ## we are currently not using the syntax with ip auto detection
+      myip_str=ip
+      myipv6_str=ip6
+      ;;
+    [Ii][Pp][Vv]64*)
+      dyndns_update_url="${IPV64NET_DYNDNS_UPDATE_URL}"
       myip_str=ip
       myipv6_str=ip6
       ;;
@@ -320,6 +326,16 @@ function send_request
       analyse_response
       return $?
       ;;
+    [Ii][Pp][Vv]64* )
+      _response=$(curl --silent "$_interface_str" \
+        --user-agent "$_userAgent" \
+        --header "Authorization: Bearer $DYNB_TOKEN" \
+        --request POST \
+        --form "domain=$DYNB_DYN_DOMAIN" \
+        "${dyndns_update_url}")
+      analyse_response
+      return $?
+    ;;
     dynv6* | duckDNS* | duckdns* | ddnss*)
       _response=$(
         curl --silent "$_interface_str" \
@@ -334,7 +350,7 @@ function send_request
 function analyse_response
 {
     case $_response in
-    good* | OK* | "addresses updated" | *Updated*hostname*)
+    good* | OK* | "addresses updated" | *Updated*hostname* | *'"info":"good"'*)
       if [[ $_response == "good 127.0.0.1" ]]; then
         errorMessage "$_response: Request ignored."
         return 1
@@ -345,8 +361,18 @@ function analyse_response
         return 0
       fi
       ;;
-    nochg*)
+    *nochg*)
       infoMessage "Nothing has changed, IP addresses are still up to date."
+      debugMessage "Response: $_response"
+      return 1
+      ;;
+    *'Bad Request'*)
+      errorMessage "Bad Request."
+      debugMessage "Response: $_response"
+      return 1
+      ;;
+    *'Too Many Requests'*)
+      errorMessage "Too Many Request."
       debugMessage "Response: $_response"
       return 1
       ;;
@@ -355,7 +381,7 @@ function analyse_response
       debugMessage "Response: $_response"
       return 1
       ;;
-    *badauth* | 401)
+    *badauth* | 401 | *Unauthorized*)
       errorMessage "Invalid token or username password combination."
       debugMessage "Response: $_response"
       return 1
