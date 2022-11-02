@@ -590,7 +590,7 @@ function handleParameters
   then rm --verbose "$_statusFile"; exit 0
   fi
   # shellcheck disable=SC2154
-  if [[ $_arg_debug == "on" ]]
+  if [[ $_arg_debug == "on" ]] || [[ $DYNB_DEBUG == true ]]
   then _debug=1
   fi
   # shellcheck disable=SC2154
@@ -650,9 +650,6 @@ function handleParameters
   then _is_IPv6_enabled=true
   fi
 
-  if [[ $DYNB_DEBUG == true ]]
-  then _debug=1
-  fi
   # shellcheck disable=SC2154
   if [[ -n $DYNB_IPv4_CHECK_SITE ]]
   then _ipv4_checker=$DYNB_IPv4_CHECK_SITE
