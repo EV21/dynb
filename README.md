@@ -31,6 +31,7 @@ The following update methods are currently implemented:
 | DuckDNS.org         | DynDNS2               | 60             | `token`                                                                                      | ⛔                        | ✔️                                             |
 | dynv6.com           | DynDNS2               | 60             | `token`                                                                                      | ✔️                       | ✔️                                             |
 | ddnss.de            | DynDNS2               | 10             | update key as `token`                                                                        | ⛔                        | ✔️                                             |
+| IPv64.net           | DynDNS2               | 300            | `DynDNS Updatehash` as `token`                                                               | ⛔                        | ✔️                                             |
 
 ## 📦 Requirements
 
@@ -153,7 +154,7 @@ services:
     tty: true
     environment:
       - DYNB_DYN_DOMAIN=dyndns.example.com
-      # Providers: deSec, duckDNS, dynv6, inwx
+      # Providers: deSec, DuckDNS, dynv6, inwx, ddnss, ipv64
       - DYNB_SERVICE_PROVIDER=desec
       # Possible update methods are: dyndns, domrobot
       - DYNB_UPDATE_METHOD=dyndns
@@ -175,7 +176,7 @@ services:
 | variable              | default value   | description                                                                                                    |
 |-----------------------|-----------------|----------------------------------------------------------------------------------------------------------------|
 | DYNB_DYN_DOMAIN       | undefined       | required; `dyndns.example.com`                                                                                 |
-| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`, `ddnss`                                                         |
+| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`, `ddnss`, `ipv64`                                                |
 | DYNB_UPDATE_METHOD    | undefined       | required; `dyndns` or `domrobot` (with inwx)                                                                   |
 | DYNB_IP_MODE          | undefined       | required; `4`, `6` or `64` for both                                                                            |
 | DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method                                                 |
