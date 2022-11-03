@@ -1,6 +1,29 @@
 # Changelog
 
 
+## 0.3.5 (2022-11-03)
+
+### Features
+
+* ✨ add support for IPv64.net as DynDNS2 provider. [Eduard Veit]
+
+### Fix
+
+* Delete status file after success. [Eduard Veit]
+
+* More status file issues. [Eduard Veit]
+
+* Incorrect status code handling. [Eduard Veit]
+
+  no persistent status file was written in case of an error as the return status code was always 0
+
+### Documentation
+
+* 📝 change TTL to 60 for IPv64.net. [Eduard Veit]
+
+* 📝 add IPv64.net as DynDNS2 provider. [Eduard Veit]
+
+
 ## 0.3.4 (2022-06-30)
 
 ### Features
