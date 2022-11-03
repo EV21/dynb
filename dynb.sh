@@ -358,7 +358,6 @@ function analyse_response
       else
         infoMessage "The DynDNS update has been executed."
         debugMessage "Response: $_response"
-        _errorCounter=0
         return 0
       fi
       ;;
@@ -771,6 +770,15 @@ function doDomrobotUpdates
   fi
 }
 
+function delete_status_file
+{
+  if test -f "$_statusFile"
+  then
+    debugMessage "Delete status file with previous errors"
+    rm "$_statusFile"
+  fi
+}
+
 function doDynDNS2Updates
 {
   changed=0
@@ -786,14 +794,16 @@ function doDynDNS2Updates
     then
       debugMessage "checkStatus has no errors, try update"
       if dynupdate
-      then debugMessage "DynDNS2 update success"
+      then
+        debugMessage "DynDNS2 update success"
+        delete_status_file
       else
         debugMessage "Save new status after dynupdate has failed"
         setStatus "$_response" "$(date +%s)" $((_errorCounter += 1)) "$DYNB_DYN_DOMAIN" "${DYNB_USERNAME}" "${DYNB_PASSWORD}${DYNB_TOKEN}"
       fi
     else debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
     fi
-  else debugMessage "Skip DynDNS2 update, IPs are up to date or there is a connection problem"
+  else debugMessage "Skip DynDNS2 update, IPs are up to date."
   fi
 }
 
