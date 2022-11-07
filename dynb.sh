@@ -12,46 +12,50 @@
 
 #DYNB_DYN_DOMAIN=
 
-## service provider could be deSEC, duckdns, dynv6, inwx
+# service provider could be deSEC, duckdns, dynv6, inwx
 #DYNB_SERVICE_PROVIDER=
 
 ## update method options: domrobot, dyndns
 #DYNB_UPDATE_METHOD=
 
-## ip mode could be either: 4, 6 or dual for dualstack
+# ip mode could be either: 4, 6 or dual for dualstack
 #DYNB_IP_MODE=
 
-## If you are using the DomRobot RPC-API enter your credentials for the web interface login here
-## If you are using the DynDNS2 protocol enter your credentials here
+# If you are using the DomRobot RPC-API enter your credentials for the web interface login here
+# If you are using the DynDNS2 protocol enter your credentials here
 #DYNB_USERNAME=
 #DYNB_PASSWORD=
-## or use a token
+# or use a token
 #DYNB_TOKEN=
 
-## TTL (time to live) for the DNS record
-## This setting is only relevant for API based record updates (not DnyDNS2!)
-## minimum allowed TTL value by inwx is 300 (5 minutes)
+# TTL (time to live) for the DNS record
+# This setting is only relevant for API based record updates (not DnyDNS2!)
+# minimum allowed TTL value by inwx is 300 (5 minutes)
 TTL=300
 
-## The IP-Check sites (some sites have different urls for v4 and v6)
-## Pro tip: use your own ip check server for privacy
-## it could be as simple as that...
-## create an index.php with <?php echo $_SERVER'REMOTE_ADDR'; ?>
-_ipv4_checker=api64.ipify.org
-_ipv6_checker=api64.ipify.org
+# The IP-Check sites (some sites have different urls for v4 and v6)
+# Pro tip: use your own ip check server for privacy
+# it could be as simple as that...
+# create an index.php with <?php echo $_SERVER'REMOTE_ADDR'; ?>
+#DYNB_IPv4_CHECK_SITE=
+#DYNB_IPv6_CHECK_SITE=
 
-## An exernal DNS check server prevents wrong info from local DNS servers/resolvers
-_DNS_checkServer=
+# An exernal DNS check server prevents wrong info from local DNS servers/resolvers
+#DYNB_DNS_CHECK_SERVER=9.9.9.9
 
-## if you are actively using multiple network interfaces you might want to specify this
-## normally the default value is okay
+# if you are actively using multiple network interfaces you might want to specify this
+# normally the default value is okay
 #_network_interface=eth0
 _network_interface=
 
 ######################################################
 ## You don't need to change the following variables ##
+
 _INWX_JSON_API_URL=https://api.domrobot.com/jsonrpc/
 _internet_connectivity_test_server=https://www.google.de
+_ipv4_checker=
+_ipv6_checker=
+_DNS_checkServer=
 _new_IPv4=
 _new_IPv6=
 _dns_records=
@@ -66,13 +70,13 @@ _response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
-_version=0.3.5
+_version=0.4.0
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
-_debug=0
+_debug=false
 _minimum_looptime=60
-_loopMode=0
+_loopMode=false
 
 # Ansi color code variables
 yellow_color="\e[0;33m"
@@ -103,9 +107,30 @@ function is_IPv6_address
   fi
 }
 
+## is_ip_address A B
+# parameters required
+# 1. param: ip_version
+# 2. param: ip_address
+function is_ip_address
+{
+  local ip_version=$1
+  local ip_address=$2
+  case $ip_version in
+    4)
+      is_IPv4_address "$ip_address"
+      result=$?
+    ;;
+    6)
+      is_IPv6_address "$ip_address"
+      result=$?
+    ;;
+  esac
+  return $result
+}
+
 function loopMode
 {
-  if [[ $_loopMode -eq 1 ]]
+  if [[ $_loopMode == "true" ]]
   then return 0
   else return 1
   fi
@@ -113,7 +138,7 @@ function loopMode
 
 function debugMode
 {
-  if [[ $_debug -eq 1 ]]
+  if [[ $_debug == "true" ]]
   then return 0
   else return 1
   fi
@@ -186,6 +211,7 @@ function fetchDNSRecords
   _dns_records=$(echo "$_response" | jq '.resData.record[]')
 }
 
+## getRecordID
 # requires parameter A or AAAA
 # result to stdout
 function getRecordID
@@ -194,29 +220,94 @@ function getRecordID
     jq "select(.type == \"${1}\") | .id"
 }
 
+## getDNSIP A
 # requires parameter A or AAAA
 # result to stdout
 function getDNSIP() {
-  echo "$_dns_records" |
-    jq --raw-output "select(.type == \"${1}\") | .content"
+  local record_type=$1
+  if [[ $DYNB_UPDATE_METHOD == domrobot ]]
+  then
+    echo "$_dns_records" |
+      jq --raw-output "select(.type == \"${record_type}\") | .content"
+  else
+    if [[ -n $_DNS_checkServer ]]
+    then dig_response=$(dig @"${_DNS_checkServer}" in "$record_type" +short "$DYNB_DYN_DOMAIN")
+    else dig_response=$(dig in "$record_type" +short "$DYNB_DYN_DOMAIN")
+    fi
+    dig_exitcode=$?
+    if [[ $dig_exitcode -gt 0 ]]
+    then
+      errorMessage "DNS request failed with exit code: $dig_exitcode $dig_response"
+      return 1
+    else
+      case $record_type in
+      A) is_ip_address 4 "$dig_response"
+      ;;
+      AAAA) is_ip_address 6 "$dig_response"
+      ;;
+      esac
+      if test $? -gt 0
+      then return 1
+      fi
+    fi
+    # If the dns resolver lists multiple records in the answer section we filter the first line
+    # using short option "-n" and not "--lines" because of alpines limited BusyBox head command
+    echo "$dig_response" | head -n 1
+  fi
 }
+
+_has_remote_ip_error=false
 
 # requires parameter
 # 1. param: 4 or 6 for ip version
-# 2. param: IP check server address
 # result to stdout
 function getRemoteIP
 {
   local ip_version=$1
-  local ip_check_server=$2
-  curl --silent "$_interface_str" --user-agent "$_userAgent" \
-    --ipv"${ip_version}" --location "${ip_check_server}"
-  local curls_status_code=$?
-  # shellcheck disable=2181
-  if [[ $curls_status_code -gt 0 ]]; then
-    errorMessage "IPCheck (getRemoteIP $ip_version) request failed"
-    exit 1
-  fi
+
+  default_ip_check_servers=("ip64.ev21.de" "api64.ipify.org" "api.my-ip.io/ip" "ip.anysrc.net/plain")
+  case $ip_version in
+    4)
+      if test -n "$_ipv4_checker"
+      then ip_check_servers=("$_ipv4_checker" "${default_ip_check_servers[@]}")
+      else ip_check_servers=("${default_ip_check_servers[@]}")
+      fi
+    ;;
+    6)
+      if test -n "$_ipv6_checker"
+      then ip_check_servers=("$_ipv6_checker" "${default_ip_check_servers[@]}")
+      else ip_check_servers=("${default_ip_check_servers[@]}")
+      fi
+    ;;
+  esac
+
+  for current_check_server in "${ip_check_servers[@]}"
+  do 
+    response=$(curl --silent "$_interface_str" --user-agent "$_userAgent" \
+    --ipv"${ip_version}" --location "${current_check_server}")
+    curls_status_code=$?
+    # shellcheck disable=2181
+    if [[ $curls_status_code -gt 0 ]]
+    then
+      errorMessage "Remote IPv$ip_version request failed with ${current_check_server}"
+      _has_remote_ip_error=true
+      return_value=1
+    else
+      if is_ip_address "$ip_version" "$response"
+      then
+        _has_remote_ip_error=false
+        echo "$response"
+        return_value=0
+        break
+      else
+        errorMessage "The response from the IP check server $current_check_server is not an IPv$ip_version address: $response"
+        _has_remote_ip_error=true
+        return_value=1
+      fi
+    fi
+  done
+
+  return $return_value
 }
 
 # requires parameter
@@ -258,93 +349,101 @@ function updateRecord
   fi
 }
 
-function select_update_base_url
+function prepare_request_parameters
 {
   # default parameter values
-  myip_str=myip
-  myipv6_str=myipv6
-
-  INWX_DYNDNS_UPDATE_URL="https://dyndns.inwx.com/nic/update?"
-  DESEC_DYNDNS_UPDATE_URL="https://update.dedyn.io/?"
-  DUCKDNS_DYNDNS_UPDATE_URL="https://www.duckdns.org/update?domains=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
-  DYNV6_DYNDNS_UPDATE_URL="https://dynv6.com/api/update?zone=$DYNB_DYN_DOMAIN&token=$DYNB_TOKEN&"
-  DDNSS_DYNDNS_UPDATE_URL="https://ddnss.de/upd.php?key=$DYNB_TOKEN&host=$DYNB_DYN_DOMAIN&"
-  IPV64NET_DYNDNS_UPDATE_URL="https://ipv64.net/nic/update?"
+  ipv4_parameter_name=myip
+  ipv6_parameter_name=myipv6
+  curl_parameters=("--user-agent" "$_userAgent")
 
   case $DYNB_SERVICE_PROVIDER in
-    inwx* | INWX*)
-      dyndns_update_url=$INWX_DYNDNS_UPDATE_URL
+    [Ii][Nn][Ww][Xx]*)
+    # inwx.de
+    # in case of dualstack use you need to request both parameters with the same request
+    # otherwise inwx will delete the not requested record type
+      curl_parameters+=("--user" "$DYNB_USERNAME:$DYNB_PASSWORD")
+      curl_parameters+=("--get") # inwx will ignore the ipv6 parameter if you don't put it into the url
+      dyndns_update_url="https://dyndns.inwx.com/nic/update"
       ;;
-    deSEC* | desec* | dedyn*)
-      dyndns_update_url="${DESEC_DYNDNS_UPDATE_URL}"
+    [Dd][Ee][Ss][Ee][Cc]* | [Dd][Ee][Dd][Yy][Nn]* )
+    # deSEC.de / dedyn.io
+      curl_parameters+=("--header" "Authorization: Token $DYNB_TOKEN")
+      curl_parameters+=("--get")
+      curl_parameters+=("--data-urlencode" "hostname=$DYNB_DYN_DOMAIN")
+      dyndns_update_url="https://update.dedyn.io"
       ;;
-    dynv6*)
-      dyndns_update_url="${DYNV6_DYNDNS_UPDATE_URL}"
-      myip_str=ipv4
-      myipv6_str=ipv6
+    [Dd][Yy][Nn][Vv]6*)
+    # dynv6.com
+      ipv4_parameter_name=ipv4
+      ipv6_parameter_name=ipv6
+      curl_parameters+=("--get")
+      curl_parameters+=("--data-urlencode" "zone=$DYNB_DYN_DOMAIN")
+      curl_parameters+=("--data-urlencode" "token=$DYNB_TOKEN")
+      dyndns_update_url="https://dynv6.com/api/update"
       ;;
-    DuckDNS* | duckdns*)
-      dyndns_update_url="${DUCKDNS_DYNDNS_UPDATE_URL}"
-      myip_str=ip
-      myipv6_str=ipv6
+    [Dd][Uu][Cc][Kk][Dd][Nn][Ss]*)
+    # DuckDNS.org
+      ipv4_parameter_name=ip
+      ipv6_parameter_name=ipv6
+      curl_parameters+=("--get")
+      curl_parameters+=("--data-urlencode" "domains=$DYNB_DYN_DOMAIN")
+      curl_parameters+=("--data-urlencode" "token=$DYNB_TOKEN")
+      dyndns_update_url="https://www.duckdns.org/update"
       ;;
-    ddnss*)
-      dyndns_update_url="${DDNSS_DYNDNS_UPDATE_URL}"
-      ## we are currently not using the syntax with ip auto detection
-      myip_str=ip
-      myipv6_str=ip6
+    [Dd][Dd][Nn][Ss][Ss]*)
+    # ddnss.de
+      ipv4_parameter_name=ip
+      ipv6_parameter_name=ip6
+      curl_parameters+=("--get")
+      curl_parameters+=("--data-urlencode" "host=$DYNB_DYN_DOMAIN")
+      curl_parameters+=("--data-urlencode" "key=$DYNB_TOKEN")
+      dyndns_update_url="https://ddnss.de/upd.php"
       ;;
     [Ii][Pp][Vv]64*)
-      dyndns_update_url="${IPV64NET_DYNDNS_UPDATE_URL}"
-      myip_str=ip
-      myipv6_str=ip6
+    # IPv64.net
+      ipv4_parameter_name=ip
+      ipv6_parameter_name=ip6
+      curl_parameters+=("--request" "POST")
+      curl_parameters+=("--header" "Authorization: Bearer $DYNB_TOKEN")
+      curl_parameters+=("--data-urlencode" "domain=$DYNB_DYN_DOMAIN")
+      dyndns_update_url="https://ipv64.net/nic/update"
       ;;
     *)
       errorMessage "$DYNB_SERVICE_PROVIDER is not supported"
       exit 1
       ;;
   esac
+
+  prepare_ip_flag_parameters
+  curl_parameters+=("${ip_flag_parameters[@]}")
+}
+
+function prepare_ip_flag_parameters
+{
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]
+  then
+    ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_new_IPv4}" "--data-urlencode" "${ipv6_parameter_name}=${_new_IPv6}")
+  fi
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]
+  then
+    ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_new_IPv4}")
+  fi
+  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]
+  then
+    ip_flag_parameters=("--data-urlencode" "${ipv6_parameter_name}=${_new_IPv6}")
+  fi
 }
 
 function send_request
 {
-    case $DYNB_SERVICE_PROVIDER in
-    inwx* | INWX*)
-      _response=$(curl --silent "$_interface_str" \
-        --user-agent "$_userAgent" \
-        --user "$DYNB_USERNAME":"$DYNB_PASSWORD" \
-        "${dyndns_update_url}")
-      analyse_response
-      status_code=$?
-      ;;
-    deSEC* | desec* | dedyn*)
-      _response=$(curl --silent "$_interface_str" \
-        --user-agent "$_userAgent" \
-        --header "Authorization: Token $DYNB_TOKEN" \
-        --get --data-urlencode "hostname=$DYNB_DYN_DOMAIN" \
-        "${dyndns_update_url}")
-      analyse_response
-      status_code=$?
-      ;;
-    [Ii][Pp][Vv]64* )
-      _response=$(curl --silent "$_interface_str" \
-        --user-agent "$_userAgent" \
-        --header "Authorization: Bearer $DYNB_TOKEN" \
-        --request POST \
-        --form "domain=$DYNB_DYN_DOMAIN" \
-        "${dyndns_update_url}")
-      analyse_response
-      status_code=$?
-    ;;
-    dynv6* | duckDNS* | duckdns* | ddnss*)
-      _response=$(
-        curl --silent "$_interface_str" \
-          --user-agent "$_userAgent" \
-          "${dyndns_update_url}")
-      analyse_response
-      status_code=$?
-      ;;
-  esac
+  local _response
+  debugMessage "curl parameters: ${curl_parameters[*]} ${dyndns_update_url}"
+  _response=$(
+    curl --silent "$_interface_str" \
+    "${curl_parameters[@]}" \
+    "${dyndns_update_url}")
+  analyse_response
+  status_code=$?
   return $status_code
 }
 
@@ -366,7 +465,7 @@ function analyse_response
       debugMessage "Response: $_response"
       return 1
       ;;
-    *'Bad Request'*)
+    400* | *'Bad Request'*)
       errorMessage "Bad Request."
       debugMessage "Response: $_response"
       return 1
@@ -435,28 +534,9 @@ function analyse_response
 # using DynDNS2 protocol
 function dynupdate
 {
-  select_update_base_url
-
-  # pre encode ip parameters
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]
-  then
-    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}&${myipv6_str}=${_new_IPv6}"
-    send_request
-    request_status=$?
-  fi
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]
-  then
-    dyndns_update_url="${dyndns_update_url}${myip_str}=${_new_IPv4}"
-    send_request
-    request_status=$?
-  fi
-  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]
-  then
-    dyndns_update_url="${dyndns_update_url}${myipv6_str}=${_new_IPv6}"
-    send_request
-    request_status=$?
-  fi
-  debugMessage "Update URL was: $dyndns_update_url"
+  prepare_request_parameters
+  send_request
+  request_status=$?
   return $request_status
 }
 
@@ -543,56 +623,18 @@ function checkStatus
 function ipHasChanged
 {
   local ip_version=$1
+  remote_ip=$(getRemoteIP "$ip_version")
+  if test $? -gt 0
+  then return 1
+  fi
   case ${ip_version} in
     4)
-      remote_ip=$(getRemoteIP 4 $_ipv4_checker)
-      if ! is_IPv4_address "$remote_ip"
-      then
-        errorMessage "The response from the IP check server is not an IPv4 address: $remote_ip"
-        return 1
-      fi
-      if [[ $DYNB_UPDATE_METHOD == domrobot ]]
-      then dns_ip=$(getDNSIP A)
-      else
-        if [[ -n $_DNS_checkServer ]]
-        then dig_response=$(dig @"${_DNS_checkServer}" in a +short "$DYNB_DYN_DOMAIN")
-        else dig_response=$(dig in a +short "$DYNB_DYN_DOMAIN")
-        fi
-        if [[ $dig_response == ";; connection timed out; no servers could be reached" ]]
-        then
-          errorMessage "DNS request failed $dig_response"
-          return 1
-        fi
-        # If the dns resolver lists multiple records in the answer section we filter the first line
-        # using short option "-n" and not "--lines" because of alpines limited BusyBox head command
-        dns_ip=$(echo "$dig_response" | head -n 1)
-      fi
+      dns_ip=$(getDNSIP A)
       _new_IPv4=$remote_ip
       debugMessage "IPv4 from remote IP check server: $_new_IPv4, IPv4 from DNS: $dns_ip"
-      ;;
+    ;;
     6)
-      remote_ip=$(getRemoteIP 6 $_ipv6_checker)
-      if ! is_IPv6_address "$remote_ip"
-      then
-        errorMessage "The response from the IP check server is not an IPv6 address: $remote_ip"
-        return 1
-      fi
-      if [[ $DYNB_UPDATE_METHOD == domrobot ]]
-      then dns_ip=$(getDNSIP AAAA)
-      else
-        if [[ -n $_DNS_checkServer ]]
-        then dig_response=$(dig @"${_DNS_checkServer}" in aaaa +short "$DYNB_DYN_DOMAIN")
-        else dig_response=$(dig in aaaa +short "$DYNB_DYN_DOMAIN")
-        fi
-        exitcode=$?
-        if [[ $exitcode -gt 0 ]]
-        then
-          errorMessage "DNS request failed with exit code: $exitcode $dig_response"
-          return 1
-        fi
-        # If the dns server lists multiple records in the answer section we filter the first line
-        dns_ip=$(echo "$dig_response" | head -n 1)
-      fi
+      dns_ip=$(getDNSIP AAAA)
       _new_IPv6=$remote_ip
       debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv6 from DNS: $dns_ip"
       ;;
@@ -626,7 +668,7 @@ function handleParameters
   fi
   # shellcheck disable=SC2154
   if [[ $_arg_debug == "on" ]] || [[ $DYNB_DEBUG == true ]]
-  then _debug=1
+  then _debug=true
   fi
   # shellcheck disable=SC2154
   if [[ $_arg_update_method != "" ]]
@@ -666,8 +708,8 @@ function handleParameters
   elif [[ $DYNB_INTERVAL -lt _minimum_looptime ]]
   then
     DYNB_INTERVAL=$_minimum_looptime
-    _loopMode=1
-  else _loopMode=1
+    _loopMode=true
+  else _loopMode=true
   fi
   if [[ $_network_interface != "" ]]
   then _interface_str="--interface $_network_interface"
@@ -788,7 +830,7 @@ function doDynDNS2Updates
   if [[ $_is_IPv6_enabled == true ]] && ipHasChanged 6
   then ((changed += 1))
   fi
-  if [[ $changed -gt 0 ]]
+  if [[ $changed -gt 0 ]] && [[ $_has_remote_ip_error == false ]]
   then
     if checkStatus
     then
@@ -803,7 +845,7 @@ function doDynDNS2Updates
       fi
     else debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
     fi
-  else debugMessage "Skip DynDNS2 update, IPs are up to date."
+  else debugMessage "Skip DynDNS2 update"
   fi
 }
 
@@ -818,17 +860,20 @@ function doUpdates
 
 function ipv6_is_not_working
 {
-  curl --ipv6 --head --silent --max-time 5 $_internet_connectivity_test_server > /dev/null
-  status_code=$?
-  if test $status_code -gt 0
-  then return 0
-  else return 1
-  fi
+  execute_connectivity_check 6
+  return $?
 }
 
 function ipv4_is_not_working
 {
-  curl --ipv4 --head --silent --max-time 5 $_internet_connectivity_test_server > /dev/null
+  execute_connectivity_check 4
+  return $?
+}
+
+function execute_connectivity_check
+{
+  local ip_version=$1
+  curl --ipv"$ip_version" --head --silent --max-time 5 $_internet_connectivity_test_server > /dev/null
   status_code=$?
   if test $status_code -gt 0
   then return 0
