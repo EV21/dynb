@@ -30,8 +30,9 @@ The following update methods are currently implemented:
 | deSEC.io (dedyn.io) | DynDNS2               | 60             | `token`                                                                                      | ✔️                       | ✔️                                             |
 | DuckDNS.org         | DynDNS2               | 60             | `token`                                                                                      | ⛔                        | ✔️                                             |
 | dynv6.com           | DynDNS2               | 60             | `token`                                                                                      | ✔️                       | ✔️                                             |
-| ddnss.de            | DynDNS2               | 10             | update key as `token`                                                                        | ⛔                        | ✔️                                             |
+| ddnss.de            | DynDNS2               | 10             | `update key` as `token`                                                                      | ⛔                        | ✔️                                             |
 | IPv64.net           | DynDNS2               | 60             | `DynDNS Updatehash` as `token`                                                               | ⛔                        | ✔️                                             |
+| dynu.com            | DynDNS2               | 30             | `username` & `password`                                                                      | ✔️                       | ✔️                                             |
 
 ## 📦 Requirements
 
