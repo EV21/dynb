@@ -364,14 +364,19 @@ function prepare_request_parameters
       curl_parameters+=("--user" "$DYNB_USERNAME:$DYNB_PASSWORD")
       curl_parameters+=("--get") # inwx will ignore the ipv6 parameter if you don't put it into the url
       dyndns_update_url="https://dyndns.inwx.com/nic/update"
-      ;;
+    ;;
+    [Dd][Yy][Nn][Uu]*)
+      curl_parameters+=("--user" "$DYNB_USERNAME:$DYNB_PASSWORD")
+      curl_parameters+=("--get")
+      dyndns_update_url="https://api.dynu.com/nic/update"
+    ;;
     [Dd][Ee][Ss][Ee][Cc]* | [Dd][Ee][Dd][Yy][Nn]* )
     # deSEC.de / dedyn.io
       curl_parameters+=("--header" "Authorization: Token $DYNB_TOKEN")
       curl_parameters+=("--get")
       curl_parameters+=("--data-urlencode" "hostname=$DYNB_DYN_DOMAIN")
       dyndns_update_url="https://update.dedyn.io"
-      ;;
+    ;;
     [Dd][Yy][Nn][Vv]6*)
     # dynv6.com
       ipv4_parameter_name=ipv4
@@ -380,7 +385,7 @@ function prepare_request_parameters
       curl_parameters+=("--data-urlencode" "zone=$DYNB_DYN_DOMAIN")
       curl_parameters+=("--data-urlencode" "token=$DYNB_TOKEN")
       dyndns_update_url="https://dynv6.com/api/update"
-      ;;
+    ;;
     [Dd][Uu][Cc][Kk][Dd][Nn][Ss]*)
     # DuckDNS.org
       ipv4_parameter_name=ip
@@ -389,7 +394,7 @@ function prepare_request_parameters
       curl_parameters+=("--data-urlencode" "domains=$DYNB_DYN_DOMAIN")
       curl_parameters+=("--data-urlencode" "token=$DYNB_TOKEN")
       dyndns_update_url="https://www.duckdns.org/update"
-      ;;
+    ;;
     [Dd][Dd][Nn][Ss][Ss]*)
     # ddnss.de
       ipv4_parameter_name=ip
@@ -398,7 +403,7 @@ function prepare_request_parameters
       curl_parameters+=("--data-urlencode" "host=$DYNB_DYN_DOMAIN")
       curl_parameters+=("--data-urlencode" "key=$DYNB_TOKEN")
       dyndns_update_url="https://ddnss.de/upd.php"
-      ;;
+    ;;
     [Ii][Pp][Vv]64*)
     # IPv64.net
       ipv4_parameter_name=ip
@@ -407,11 +412,11 @@ function prepare_request_parameters
       curl_parameters+=("--header" "Authorization: Bearer $DYNB_TOKEN")
       curl_parameters+=("--data-urlencode" "domain=$DYNB_DYN_DOMAIN")
       dyndns_update_url="https://ipv64.net/nic/update"
-      ;;
+    ;;
     *)
       errorMessage "$DYNB_SERVICE_PROVIDER is not supported"
       exit 1
-      ;;
+    ;;
   esac
 
   prepare_ip_flag_parameters
@@ -515,7 +520,7 @@ function analyse_response
       errorMessage "$_response: There is an internal error in the dyndns update system. Retry update no sooner than 30 minutes."
       return 1
       ;;
-    911 | 5*)
+    servererror | 911 | 5*)
       errorMessage "$_response: A fatal error on provider side such as a database outage. Retry update no sooner than 30 minutes."
       return 1
       ;;
@@ -589,7 +594,7 @@ function checkStatus
       echo "If it still fails file an issue at github or try another client :)"
       return 1
       ;;
-    911 | 5* | *'Too Many Requests'*)
+    servererror | 911 | 5* | *'Too Many Requests'*)
       delta=$(($(date +%s) - _eventTime))
       if [[ $delta -lt 1800 ]]
       then
