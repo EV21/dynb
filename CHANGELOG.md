@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 0.4.0 (2022-11-07)
+
+### Features
+
+* ✨ add support for dynu.com as DynDNS2 provider. [Eduard Veit]
+
+### Documentation
+
+* 📝 add dynu.com as DynDNS2 provider. [Eduard Veit]
+
+
 ## 0.3.5 (2022-11-03)
 
 ### Features
