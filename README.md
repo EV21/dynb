@@ -174,17 +174,17 @@ services:
 
 ## environment variables
 
-| variable              | default value   | description                                                                                                    |
-|-----------------------|-----------------|----------------------------------------------------------------------------------------------------------------|
-| DYNB_DYN_DOMAIN       | undefined       | required; `dyndns.example.com`                                                                                 |
-| DYNB_SERVICE_PROVIDER | undefined       | required; `deSEC`, `duckdns`, `dynv6`, `inwx`, `ddnss`, `ipv64`                                                |
-| DYNB_UPDATE_METHOD    | undefined       | required; `dyndns` or `domrobot` (with inwx)                                                                   |
-| DYNB_IP_MODE          | undefined       | required; `4`, `6` or `64` for both                                                                            |
-| DYNB_USERNAME         | undefined       | the requirement depends on your provider and the update method                                                 |
-| DYNB_PASSWORD         | undefined       | the requirement depends on your provider and the update method                                                 |
-| DYNB_TOKEN            | undefined       | the requirement depends on your provider and the update method                                                 |
-| DYNB_INTERVAL         | undefined       | without this setting the script/docker container will run one time and exits                                   |
-| DYNB_DEBUG            | undefined       | more console outputs                                                                                           |
-| DYNB_IPv4_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP                                                      |
-| DYNB_IPv6_CHECK_SITE  | api64.ipify.org | You need a website or Web-API that outputs your remote IP                                                      |
-| DYNB_DNS_CHECK_SERVER | undefined       | If you are using a local DNS Resolver/Server make sure it answers with the public answer or set another server |
+| variable              | default value                                                                                                                  | description                                                                                                    |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| DYNB_DYN_DOMAIN       | undefined                                                                                                                      | required; `dyndns.example.com`                                                                                 |
+| DYNB_SERVICE_PROVIDER | undefined                                                                                                                      | required; `deSEC`, `duckdns`, `dynv6`, `inwx`, `ddnss`, `ipv64`                                                |
+| DYNB_UPDATE_METHOD    | undefined                                                                                                                      | required; `dyndns` or `domrobot` (with inwx)                                                                   |
+| DYNB_IP_MODE          | undefined                                                                                                                      | required; `4`, `6` or `64` for both                                                                            |
+| DYNB_USERNAME         | undefined                                                                                                                      | the requirement depends on your provider and the update method                                                 |
+| DYNB_PASSWORD         | undefined                                                                                                                      | the requirement depends on your provider and the update method                                                 |
+| DYNB_TOKEN            | undefined                                                                                                                      | the requirement depends on your provider and the update method                                                 |
+| DYNB_INTERVAL         | undefined                                                                                                                      | without this setting the script/docker container will run one time and exits                                   |
+| DYNB_DEBUG            | undefined                                                                                                                      | more console outputs                                                                                           |
+| DYNB_IPv4_CHECK_SITE  | tries in this order `ip64.ev21.de` (anonymous logging for 7 days), `api64.ipify.org`, `api.my-ip.io/ip`, `ip.anysrc.net/plain` | You need a website or Web-API that outputs your remote IP                                                      |
+| DYNB_IPv6_CHECK_SITE  | tries in this order `ip64.ev21.de` (anonymous logging for 7 days), `api64.ipify.org`, `api.my-ip.io/ip`, `ip.anysrc.net/plain` | You need a website or Web-API that outputs your remote IP                                                      |
+| DYNB_DNS_CHECK_SERVER | using the DynDNS2 providers DNS servers                                                                                        | If you are using a local DNS Resolver/Server make sure it answers with the public answer or set another server |
