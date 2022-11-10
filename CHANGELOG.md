@@ -1,6 +1,19 @@
 # Changelog
 
 
+## 0.5.0 (2022-11-10)
+
+### Features
+
+* Use provider DNS servers. [Eduard Veit]
+
+* Temporarily disable an ip version if the connectivity/routing does not work. [Eduard Veit]
+
+### Documentation
+
+* 📝 update default values in table. [Eduard Veit]
+
+
 ## 0.4.0 (2022-11-07)
 
 ### Features
