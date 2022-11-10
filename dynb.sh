@@ -77,6 +77,10 @@ _statusFile=/tmp/dynb.status
 _debug=false
 _minimum_looptime=60
 _loopMode=false
+_remote_ip=
+_has_remote_ip_error=
+_has_remote_ip4=false
+_has_remote_ip6=false
 
 # Ansi color code variables
 yellow_color="\e[0;33m"
@@ -221,7 +225,7 @@ function getRecordID
 }
 
 ## getDNSIP A
-# requires parameter A or AAAA
+# requires parameter A or AAAA,
 # result to stdout
 function getDNSIP() {
   local record_type=$1
@@ -256,8 +260,8 @@ function getDNSIP() {
   fi
 }
 
-_has_remote_ip_error=false
-
+## getRemoteIP A
+# sets the variable _remote_ip
 # requires parameter
 # 1. param: 4 or 6 for ip version
 # result to stdout
@@ -289,14 +293,14 @@ function getRemoteIP
     # shellcheck disable=2181
     if [[ $curls_status_code -gt 0 ]]
     then
-      errorMessage "Remote IPv$ip_version request failed with ${current_check_server}"
+      errorMessage "Remote IPv$ip_version request failed with ${current_check_server} curl status code: $curls_status_code"
       _has_remote_ip_error=true
       return_value=1
     else
       if is_ip_address "$ip_version" "$response"
       then
         _has_remote_ip_error=false
-        echo "$response"
+        _remote_ip="$response"
         return_value=0
         break
       else
@@ -307,6 +311,20 @@ function getRemoteIP
     fi
   done
 
+  case $ip_version in
+  4)
+    if [[ $_has_remote_ip_error == true ]]
+    then _has_remote_ip4=false
+    else _has_remote_ip4=true
+    fi
+  ;;
+  6)
+    if [[ $_has_remote_ip_error == true ]]
+    then export _has_remote_ip6=false
+    else export _has_remote_ip6=true
+    fi
+  ;;
+  esac
   return $return_value
 }
 
@@ -425,15 +443,16 @@ function prepare_request_parameters
 
 function prepare_ip_flag_parameters
 {
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]]
+  debugMessage "IPv4 enabled: $_is_IPv4_enabled; IPv6 enabled: $_is_IPv6_enabled; has remote IPv4: $_has_remote_ip4; has remote IPv6: $_has_remote_ip6"
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]] && [[ $_has_remote_ip4 == true ]] && [[ $_has_remote_ip6 == true ]]
   then
     ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_new_IPv4}" "--data-urlencode" "${ipv6_parameter_name}=${_new_IPv6}")
   fi
-  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]]
+  if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]] || [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]] && [[ $_has_remote_ip4 == true ]] && [[ $_has_remote_ip6 == false ]]
   then
     ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_new_IPv4}")
   fi
-  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]]
+  if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]] || [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]] && [[ $_has_remote_ip4 == false ]] && [[ $_has_remote_ip6 == true ]]
   then
     ip_flag_parameters=("--data-urlencode" "${ipv6_parameter_name}=${_new_IPv6}")
   fi
@@ -628,25 +647,24 @@ function checkStatus
 function ipHasChanged
 {
   local ip_version=$1
-  remote_ip=$(getRemoteIP "$ip_version")
+  getRemoteIP "$ip_version"
   if test $? -gt 0
   then return 1
   fi
   case ${ip_version} in
     4)
       dns_ip=$(getDNSIP A)
-      _new_IPv4=$remote_ip
+      _new_IPv4=$_remote_ip
       debugMessage "IPv4 from remote IP check server: $_new_IPv4, IPv4 from DNS: $dns_ip"
     ;;
     6)
       dns_ip=$(getDNSIP AAAA)
-      _new_IPv6=$remote_ip
+      _new_IPv6=$_remote_ip
       debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv6 from DNS: $dns_ip"
-      ;;
-    *) ;;
+    ;;
   esac
 
-  if [[ "$remote_ip" == "$dns_ip" ]]
+  if [[ "$_remote_ip" == "$dns_ip" ]]
   then return 1
   else
     case ${ip_version} in
@@ -835,7 +853,7 @@ function doDynDNS2Updates
   if [[ $_is_IPv6_enabled == true ]] && ipHasChanged 6
   then ((changed += 1))
   fi
-  if [[ $changed -gt 0 ]] && [[ $_has_remote_ip_error == false ]]
+  if [[ $changed -gt 0 ]]
   then
     if checkStatus
     then
