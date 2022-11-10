@@ -70,7 +70,7 @@ _response=
 _statusHostname=
 _statusUsername=
 _statusPassword=
-_version=0.4.0
+_version=0.5.0
 _userAgent="DynB/$_version github.com/EV21/dynb"
 _configFile=$HOME/.local/share/dynb/.env
 _statusFile=/tmp/dynb.status
@@ -78,6 +78,7 @@ _debug=false
 _minimum_looptime=60
 _loopMode=false
 _remote_ip=
+_dns_ip=
 _has_remote_ip_error=
 _has_remote_ip4=false
 _has_remote_ip6=false
@@ -224,9 +225,48 @@ function getRecordID
     jq "select(.type == \"${1}\") | .id"
 }
 
+## do_dig_request A B
+# sets variable: _dns_ip
+#
+# requires parameter
+# 1. param: dns server address
+# 2. param: A or AAAA
+function do_dig_request
+{
+  local dns_server=$1
+  local record_type=$2
+  dig_response=$(dig @"$dns_server" in "$record_type" +short "$DYNB_DYN_DOMAIN")
+  dig_exitcode=$?
+  if [[ $dig_exitcode -gt 0 ]]
+  then
+    errorMessage "DNS request failed with exit code: $dig_exitcode $dig_response"
+    unset _dns_ip
+    return 1
+  else
+    case $record_type in
+    A) is_ip_address 4 "$dig_response"
+    ;;
+    AAAA) is_ip_address 6 "$dig_response"
+    ;;
+    esac
+    if test $? -gt 0
+    then
+      test -n "$dig_response" || debugMessage "dig response: $dig_response"
+      unset _dns_ip
+      return 1
+    fi
+  fi
+  # If the dns resolver lists multiple records in the answer section we filter the first line
+  # using short option "-n" and not "--lines" because of alpines limited BusyBox head command
+  _dns_ip=$(echo "$dig_response" | head -n 1)
+  return 0
+}
+
 ## getDNSIP A
-# requires parameter A or AAAA,
-# result to stdout
+# sets variable: _dns_ip
+#
+# requires parameter
+# 1. param: A or AAAA
 function getDNSIP() {
   local record_type=$1
   if [[ $DYNB_UPDATE_METHOD == domrobot ]]
@@ -234,36 +274,22 @@ function getDNSIP() {
     echo "$_dns_records" |
       jq --raw-output "select(.type == \"${record_type}\") | .content"
   else
-    if [[ -n $_DNS_checkServer ]]
-    then dig_response=$(dig @"${_DNS_checkServer}" in "$record_type" +short "$DYNB_DYN_DOMAIN")
-    else dig_response=$(dig in "$record_type" +short "$DYNB_DYN_DOMAIN")
-    fi
-    dig_exitcode=$?
-    if [[ $dig_exitcode -gt 0 ]]
-    then
-      errorMessage "DNS request failed with exit code: $dig_exitcode $dig_response"
-      return 1
-    else
-      case $record_type in
-      A) is_ip_address 4 "$dig_response"
-      ;;
-      AAAA) is_ip_address 6 "$dig_response"
-      ;;
-      esac
-      if test $? -gt 0
-      then return 1
+    for current_dns_server in "${provider_dns_servers[@]}"
+    do
+      debugMessage "try dig DNS request with record type $record_type @$current_dns_server"
+      if do_dig_request "$current_dns_server" "$record_type"
+      then break
       fi
-    fi
-    # If the dns resolver lists multiple records in the answer section we filter the first line
-    # using short option "-n" and not "--lines" because of alpines limited BusyBox head command
-    echo "$dig_response" | head -n 1
+    done
   fi
 }
 
 ## getRemoteIP A
-# sets the variable _remote_ip
+# sets variable: _remote_ip,
+#
 # requires parameter
 # 1. param: 4 or 6 for ip version
+#
 # result to stdout
 function getRemoteIP
 {
@@ -286,7 +312,8 @@ function getRemoteIP
   esac
 
   for current_check_server in "${ip_check_servers[@]}"
-  do 
+  do
+    debugMessage "try getting remote ip from $current_check_server"
     response=$(curl --silent "$_interface_str" --user-agent "$_userAgent" \
     --ipv"${ip_version}" --location "${current_check_server}")
     curls_status_code=$?
@@ -382,11 +409,13 @@ function prepare_request_parameters
       curl_parameters+=("--user" "$DYNB_USERNAME:$DYNB_PASSWORD")
       curl_parameters+=("--get") # inwx will ignore the ipv6 parameter if you don't put it into the url
       dyndns_update_url="https://dyndns.inwx.com/nic/update"
+      provider_dns_servers=("ns.inwx.de" "ns2.inwx.de" "ns3.inwx.eu")
     ;;
     [Dd][Yy][Nn][Uu]*)
       curl_parameters+=("--user" "$DYNB_USERNAME:$DYNB_PASSWORD")
       curl_parameters+=("--get")
       dyndns_update_url="https://api.dynu.com/nic/update"
+      provider_dns_servers=("NS11.dynu.com" "NS10.dynu.com" "NS12.dynu.com")
     ;;
     [Dd][Ee][Ss][Ee][Cc]* | [Dd][Ee][Dd][Yy][Nn]* )
     # deSEC.de / dedyn.io
@@ -394,6 +423,7 @@ function prepare_request_parameters
       curl_parameters+=("--get")
       curl_parameters+=("--data-urlencode" "hostname=$DYNB_DYN_DOMAIN")
       dyndns_update_url="https://update.dedyn.io"
+      provider_dns_servers=("ns1.desec.io" "ns2.desec.org")
     ;;
     [Dd][Yy][Nn][Vv]6*)
     # dynv6.com
@@ -403,6 +433,7 @@ function prepare_request_parameters
       curl_parameters+=("--data-urlencode" "zone=$DYNB_DYN_DOMAIN")
       curl_parameters+=("--data-urlencode" "token=$DYNB_TOKEN")
       dyndns_update_url="https://dynv6.com/api/update"
+      provider_dns_servers=("ns1.dynv6.com" "ns2.dynv6.com" "ns3.dynv6.com")
     ;;
     [Dd][Uu][Cc][Kk][Dd][Nn][Ss]*)
     # DuckDNS.org
@@ -412,6 +443,7 @@ function prepare_request_parameters
       curl_parameters+=("--data-urlencode" "domains=$DYNB_DYN_DOMAIN")
       curl_parameters+=("--data-urlencode" "token=$DYNB_TOKEN")
       dyndns_update_url="https://www.duckdns.org/update"
+      provider_dns_servers=("ns1.duckdns.org" "ns2.duckdns.org")
     ;;
     [Dd][Dd][Nn][Ss][Ss]*)
     # ddnss.de
@@ -421,6 +453,7 @@ function prepare_request_parameters
       curl_parameters+=("--data-urlencode" "host=$DYNB_DYN_DOMAIN")
       curl_parameters+=("--data-urlencode" "key=$DYNB_TOKEN")
       dyndns_update_url="https://ddnss.de/upd.php"
+      provider_dns_servers=("ns1.ddnss.de" "ns2.ddnss.de" "ns3.ddnss.de")
     ;;
     [Ii][Pp][Vv]64*)
     # IPv64.net
@@ -430,15 +463,16 @@ function prepare_request_parameters
       curl_parameters+=("--header" "Authorization: Bearer $DYNB_TOKEN")
       curl_parameters+=("--data-urlencode" "domain=$DYNB_DYN_DOMAIN")
       dyndns_update_url="https://ipv64.net/nic/update"
+      provider_dns_servers=("ns1.IPv64.net" "ns2.IPv64.net")
     ;;
     *)
       errorMessage "$DYNB_SERVICE_PROVIDER is not supported"
       exit 1
     ;;
   esac
-
-  prepare_ip_flag_parameters
-  curl_parameters+=("${ip_flag_parameters[@]}")
+  if test -n "$_DNS_checkServer"
+  then provider_dns_servers=("$_DNS_checkServer" "${provider_dns_servers[@]}")
+  fi
 }
 
 function prepare_ip_flag_parameters
@@ -558,7 +592,8 @@ function analyse_response
 # using DynDNS2 protocol
 function dynupdate
 {
-  prepare_request_parameters
+  prepare_ip_flag_parameters
+  curl_parameters+=("${ip_flag_parameters[@]}")
   send_request
   request_status=$?
   return $request_status
@@ -653,23 +688,23 @@ function ipHasChanged
   fi
   case ${ip_version} in
     4)
-      dns_ip=$(getDNSIP A)
+      getDNSIP A
       _new_IPv4=$_remote_ip
-      debugMessage "IPv4 from remote IP check server: $_new_IPv4, IPv4 from DNS: $dns_ip"
+      debugMessage "IPv4 from remote IP check server: $_new_IPv4, IPv4 from DNS: $_dns_ip"
     ;;
     6)
-      dns_ip=$(getDNSIP AAAA)
+      getDNSIP AAAA
       _new_IPv6=$_remote_ip
-      debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv6 from DNS: $dns_ip"
+      debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv6 from DNS: $_dns_ip"
     ;;
   esac
 
-  if [[ "$_remote_ip" == "$dns_ip" ]]
+  if [[ "$_remote_ip" == "$_dns_ip" ]]
   then return 1
   else
     case ${ip_version} in
-    4) infoMessage "New IPv4: $_new_IPv4 old was: $dns_ip";;
-    6) infoMessage "New IPv6: $_new_IPv6 old was: $dns_ip";;
+    4) infoMessage "New IPv4: $_new_IPv4 old was: $_dns_ip";;
+    6) infoMessage "New IPv6: $_new_IPv6 old was: $_dns_ip";;
     esac
     return 0
   fi
@@ -846,6 +881,7 @@ function delete_status_file
 
 function doDynDNS2Updates
 {
+  prepare_request_parameters
   changed=0
   if [[ $_is_IPv4_enabled == true ]] && ipHasChanged 4
   then ((changed += 1))
