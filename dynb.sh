@@ -53,6 +53,7 @@ _network_interface=
 
 _INWX_JSON_API_URL=https://api.domrobot.com/jsonrpc/
 _internet_connectivity_test_server=https://www.google.de
+_default_check_ip_servers=("ip64.ev21.de" "api64.ipify.org" "api.my-ip.io/ip" "ip.anysrc.net/plain")
 _ipv4_checker=
 _ipv6_checker=
 _DNS_checkServer=
@@ -295,25 +296,27 @@ function getRemoteIP
 {
   local ip_version=$1
 
-  default_ip_check_servers=("ip64.ev21.de" "api64.ipify.org" "api.my-ip.io/ip" "ip.anysrc.net/plain")
+  if test -n "$_provider_check_ip"
+  then ip_check_servers=("$_provider_check_ip" "${_default_check_ip_servers[@]}")
+  fi
   case $ip_version in
     4)
       if test -n "$_ipv4_checker"
-      then ip_check_servers=("$_ipv4_checker" "${default_ip_check_servers[@]}")
-      else ip_check_servers=("${default_ip_check_servers[@]}")
+      then ip_check_servers=("$_ipv4_checker" "${_default_check_ip_servers[@]}")
+      else ip_check_servers=("${_default_check_ip_servers[@]}")
       fi
     ;;
     6)
       if test -n "$_ipv6_checker"
-      then ip_check_servers=("$_ipv6_checker" "${default_ip_check_servers[@]}")
-      else ip_check_servers=("${default_ip_check_servers[@]}")
+      then ip_check_servers=("$_ipv6_checker" "${_default_check_ip_servers[@]}")
+      else ip_check_servers=("${_default_check_ip_servers[@]}")
       fi
     ;;
   esac
 
   for current_check_server in "${ip_check_servers[@]}"
   do
-    debugMessage "try getting remote ip from $current_check_server"
+    debugMessage "try getting remote IPv$ip_version via $current_check_server"
     response=$(curl --silent "$_interface_str" --user-agent "$_userAgent" \
     --ipv"${ip_version}" --location "${current_check_server}")
     curls_status_code=$?
@@ -424,6 +427,7 @@ function prepare_request_parameters
       curl_parameters+=("--data-urlencode" "hostname=$DYNB_DYN_DOMAIN")
       dyndns_update_url="https://update.dedyn.io"
       provider_dns_servers=("ns1.desec.io" "ns2.desec.org")
+      _provider_check_ip="https://checkip.dedyn.io" # checkipv4 and checkipv6 is also available
     ;;
     [Dd][Yy][Nn][Vv]6*)
     # dynv6.com
