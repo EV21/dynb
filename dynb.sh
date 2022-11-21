@@ -57,14 +57,13 @@ _default_check_ip_servers=("ip64.ev21.de" "api64.ipify.org" "api.my-ip.io/ip" "i
 _ipv4_checker=
 _ipv6_checker=
 _DNS_checkServer=
-_new_IPv4=
-_new_IPv6=
+_remote_IPv4=
+_remote_IPv6=
 _dns_records=
 _main_domain=
 _is_IPv4_enabled=false
 _is_IPv6_enabled=false
 _interface_str=
-_status=
 _eventTime=0
 _errorCounter=0
 _response=
@@ -366,12 +365,12 @@ function updateRecord
   if [[ ${ip_version} == 4 ]]
   then
     ID=$(getRecordID A)
-    IP=$_new_IPv4
+    IP=$_remote_IPv4
   fi
   if [[ ${ip_version} == 6 ]]
   then
     ID=$(getRecordID AAAA)
-    IP=$_new_IPv6
+    IP=$_remote_IPv6
   fi
   if [[ $IP != "" ]]
   then
@@ -484,15 +483,15 @@ function prepare_ip_flag_parameters
   debugMessage "IPv4 enabled: $_is_IPv4_enabled; IPv6 enabled: $_is_IPv6_enabled; has remote IPv4: $_has_remote_ip4; has remote IPv6: $_has_remote_ip6"
   if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]] && [[ $_has_remote_ip4 == true ]] && [[ $_has_remote_ip6 == true ]]
   then
-    ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_new_IPv4}" "--data-urlencode" "${ipv6_parameter_name}=${_new_IPv6}")
+    ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_remote_IPv4}" "--data-urlencode" "${ipv6_parameter_name}=${_remote_IPv6}")
   fi
   if [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == false ]] || [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]] && [[ $_has_remote_ip4 == true ]] && [[ $_has_remote_ip6 == false ]]
   then
-    ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_new_IPv4}")
+    ip_flag_parameters=("--data-urlencode" "${ipv4_parameter_name}=${_remote_IPv4}")
   fi
   if [[ $_is_IPv4_enabled == false ]] && [[ $_is_IPv6_enabled == true ]] || [[ $_is_IPv4_enabled == true ]] && [[ $_is_IPv6_enabled == true ]] && [[ $_has_remote_ip4 == false ]] && [[ $_has_remote_ip6 == true ]]
   then
-    ip_flag_parameters=("--data-urlencode" "${ipv6_parameter_name}=${_new_IPv6}")
+    ip_flag_parameters=("--data-urlencode" "${ipv6_parameter_name}=${_remote_IPv6}")
   fi
 }
 
@@ -504,6 +503,7 @@ function send_request
     curl --silent "$_interface_str" \
     "${curl_parameters[@]}" \
     "${dyndns_update_url}")
+  _curl_exit_code=$?
   analyse_response
   status_code=$?
   return $status_code
@@ -582,7 +582,11 @@ function analyse_response
       return 1
       ;;
     *)
-      if [[ "$_response" == "$_status" ]]; then
+      if test $_curl_exit_code -gt 0
+      then
+        analyse_curl_exit_code $_curl_exit_code
+        return $?  
+      elif test -n "$_response" && [[ "$_response" == "$_previous_response_was" ]]; then
         errorMessage "An unknown response code has been received: $_response"
         return 1
       else
@@ -591,6 +595,26 @@ function analyse_response
       fi
       ;;
   esac
+}
+
+function analyse_curl_exit_code
+{
+  local current_curl_exit_code=$1
+  case $current_curl_exit_code in
+    6)
+      errorMessage "curl exit code: $_curl_exit_code; Couldn't resolve host: $dyndns_update_url"
+    ;;
+    7)
+      errorMessage "curl exit code: $_curl_exit_code; Failed to connect to host: $dyndns_update_url"
+    ;;
+    22)
+      errorMessage "curl exit code: $_curl_exit_code HTTP error code being 400 or above"
+    ;;
+    *)
+      errorMessage "curl exit code: $_curl_exit_code"
+    ;;
+  esac
+  return "$current_curl_exit_code"
 }
 
 # using DynDNS2 protocol
@@ -605,15 +629,25 @@ function dynupdate
 
 function setStatus
 {
-  echo "_status=$1; _eventTime=$2; _errorCounter=$3; _statusHostname=$4; _statusUsername=$5; _statusPassword=$6" >/tmp/dynb.status
+  echo "_curl_exit_code_was=$1; _previous_response_was=$2 _eventTime=$3; _errorCounter=$4; _statusHostname=$5; _statusUsername=$6; _statusPassword=$7" >/tmp/dynb.status
 }
+
+declare _previous_response_was
+declare _curl_exit_code_was
 
 # handle errors from past update requests
 function checkStatus
 {
-  case $_status in
+  local check_string
+  if [[ -z "${_previous_response_was}" ]]
+  then check_string=$_curl_exit_code_was
+  else check_string=$_previous_response_was
+  fi
+  
+  case $check_string in
     *nochg*)
-      if [[ _errorCounter -gt 1 ]]; then
+      if [[ _errorCounter -gt 1 ]]
+      then
         errorMessage "The update client was spamming unnecessary update requests, something might be wrong with your IP-Check site."
         errorMessage "Fix your config and then delete $_statusFile or restart your docker container"
         return 1
@@ -623,7 +657,7 @@ function checkStatus
       if [[ "$_statusHostname" == "$DYNB_DYN_DOMAIN" && ("$_statusUsername" == "$DYNB_USERNAME" || $_statusUsername == "$DYNB_TOKEN") ]]; then
         errorMessage "Hostname supplied does not exist under specified account, enter new login credentials before performing an additional request."
         return 1
-      else rm "$_statusFile"
+      else delete_status_file
       fi
       return 0
       ;;
@@ -631,7 +665,7 @@ function checkStatus
       if [[ "$_statusUsername" == "$DYNB_USERNAME" &&  ("$_statusPassword" == "$DYNB_PASSWORD" || $_statusPassword == "$DYNB_TOKEN") ]]; then
         errorMessage "Invalid username password combination."
         return 1
-      else rm "$_statusFile"
+      else delete_status_file
       fi
       return 0
       ;;
@@ -653,32 +687,57 @@ function checkStatus
       return 1
       ;;
     servererror | 911 | 5* | *'Too Many Requests'*)
-      delta=$(($(date +%s) - _eventTime))
-      if [[ $delta -lt 1800 ]]
+      if check_delay 30
       then
-        errorMessage "$_status: The provider currently has an fatal error. DynB will wait for next update until 30 minutes have passed since last request, $(date --date=@$delta -u +%M) minutes already passed."
+        delete_status_file
+        return 0
+      else
+        errorMessage "$_previous_response_was: The provider currently has a fatal error."
         return 1
-      else rm "$_statusFile"
       fi
-      return 0
       ;;
     *'Bad Request'*)
-      if [[ "$_statusUsername" == "$DYNB_USERNAME" &&  ("$_statusPassword" == "$DYNB_PASSWORD" || $_statusPassword == "$DYNB_TOKEN") ]]; then
+      if [[ "$_statusUsername" == "$DYNB_USERNAME" &&  ("$_statusPassword" == "$DYNB_PASSWORD" || $_statusPassword == "$DYNB_TOKEN") ]]
+      then
         errorMessage "Bad Request: Please check your credentials, maybe your token is invalid."
         return 1
-      else rm "$_statusFile"
+      else delete_status_file
       fi
       return 0
       ;;
     *)
-      if [[ _errorCounter -gt 1 ]]
+      if [[ $_errorCounter -gt 1 ]] && [[ "$_curl_exit_code_was" -eq 0 ]]
       then
         errorMessage "An unknown response code has repeatedly been received. $_response"
         return 1
+      elif [[ $_errorCounter -gt 1 ]] && [[ "$_curl_exit_code_was" -eq 7 ]]
+      then
+        if check_delay 15
+        then
+          delete_status_file
+          return 0
+        else return 1
+        fi
       else return 0
       fi
       ;;
   esac
+}
+
+function check_delay
+{
+  local minutes=$1
+  local seconds=$(( minutes * 60 ))
+  delta=$(($(date +%s) - _eventTime))
+  if [[ $delta -lt $seconds ]]
+  then
+    errorMessage "DynB only executes an update when $minutes minutes have passed since the last failed request, $(date --date=@$delta -u +%M) minutes have already passed."
+    if loopMode
+    then sleep $seconds
+    else return 1
+    fi
+  else return 0
+  fi
 }
 
 # requires parameter
@@ -693,13 +752,13 @@ function ipHasChanged
   case ${ip_version} in
     4)
       getDNSIP A
-      _new_IPv4=$_remote_ip
-      debugMessage "IPv4 from remote IP check server: $_new_IPv4, IPv4 from DNS: $_dns_ip"
+      _remote_IPv4=$_remote_ip
+      debugMessage "IPv4 from remote IP check server: $_remote_IPv4, IPv4 from DNS: $_dns_ip"
     ;;
     6)
       getDNSIP AAAA
-      _new_IPv6=$_remote_ip
-      debugMessage "IPv6 from remote IP check server: $_new_IPv6, IPv6 from DNS: $_dns_ip"
+      _remote_IPv6=$_remote_ip
+      debugMessage "IPv6 from remote IP check server: $_remote_IPv6, IPv6 from DNS: $_dns_ip"
     ;;
   esac
 
@@ -707,8 +766,8 @@ function ipHasChanged
   then return 1
   else
     case ${ip_version} in
-    4) infoMessage "New IPv4: $_new_IPv4 old was: $_dns_ip";;
-    6) infoMessage "New IPv6: $_new_IPv6 old was: $_dns_ip";;
+    4) infoMessage "Remote IPv4: $_remote_IPv4 DNS IPv4: $_dns_ip";;
+    6) infoMessage "Remote IPv6: $_remote_IPv6 DNS IPv6: $_dns_ip";;
     esac
     return 0
   fi
@@ -838,8 +897,8 @@ function doUnsets
   unset _is_IPv4_enabled
   unset _is_IPv6_enabled
   unset _main_domain
-  unset _new_IPv4
-  unset _new_IPv6
+  unset _remote_IPv4
+  unset _remote_IPv6
   unset _version
   unset DYNB_DYN_DOMAIN
   unset DYNB_USERNAME
@@ -880,6 +939,13 @@ function delete_status_file
   then
     debugMessage "Delete status file with previous errors"
     rm "$_statusFile"
+    unset _curl_exit_code_was
+    unset _previous_response_was
+    unset _eventTime
+    unset _errorCounter
+    unset _statusHostname
+    unset _statusUsername
+    unset _statusPassword
   fi
 }
 
@@ -904,7 +970,7 @@ function doDynDNS2Updates
         delete_status_file
       else
         debugMessage "Save new status after dynupdate has failed"
-        setStatus "$_response" "$(date +%s)" $((_errorCounter += 1)) "$DYNB_DYN_DOMAIN" "${DYNB_USERNAME}" "${DYNB_PASSWORD}${DYNB_TOKEN}"
+        setStatus "$_curl_exit_code" "$_response" "$(date +%s)" $((_errorCounter += 1)) "$DYNB_DYN_DOMAIN" "${DYNB_USERNAME}" "${DYNB_PASSWORD}${DYNB_TOKEN}"
       fi
     else debugMessage "Skip DynDNS2 update, checkStatus fetched previous error."
     fi
