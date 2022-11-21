@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 0.5.1 (2022-11-21)
+
+### Features
+
+* Use provider checkip API. [Eduard Veit]
+
+### Fix
+
+* Handle some curl exit codes. [Eduard Veit]
+
+
 ## 0.5.0 (2022-11-10)
 
 ### Features
