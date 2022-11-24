@@ -23,16 +23,16 @@ IPv4 (A) and IPv6 (AAAA) record updates are supported.
 
 The following update methods are currently implemented:
 
-| Provider            | API                   | TTL in seconds | Credentials                                                                                  | own domain via NS record | free (sub-) domain                             |
-|---------------------|-----------------------|----------------|----------------------------------------------------------------------------------------------|--------------------------|------------------------------------------------|
-| INWX.com            | Domrobot JSON-RPC-API | 300            | customer login `username` & `password`. Mobile TAN (OTP) is currently not supported by DynB. | ✔️                       | ⛔ choose one of your owned domains             |
-| INWX.com            | DynDNS2               | 60             | specific dyndns `username` & `password`                                                      | ✔️                       | ⛔ choose one of your owned domains per account |
-| deSEC.io (dedyn.io) | DynDNS2               | 60             | `token`                                                                                      | ✔️                       | ✔️                                             |
-| DuckDNS.org         | DynDNS2               | 60             | `token`                                                                                      | ⛔                        | ✔️                                             |
-| dynv6.com           | DynDNS2               | 60             | `token`                                                                                      | ✔️                       | ✔️                                             |
-| ddnss.de            | DynDNS2               | 10             | `update key` as `token`                                                                      | ⛔                        | ✔️                                             |
-| IPv64.net           | DynDNS2               | 60             | `DynDNS Updatehash` as `token`                                                               | ⛔                        | ✔️                                             |
-| dynu.com            | DynDNS2               | 30             | `username` & `password`                                                                      | ✔️                       | ✔️                                             |
+| Provider            | API                   | TTL in seconds | Credentials                                                                                  | own domain via NS record                 | free (sub-) domain                   |
+|---------------------|-----------------------|----------------|----------------------------------------------------------------------------------------------|------------------------------------------|--------------------------------------|
+| INWX.com            | Domrobot JSON-RPC-API | 300            | customer login `username` & `password`. Mobile TAN (OTP) is currently not supported by DynB. | ✔️ 🆓 for your registered domains @ inwx | ⛔ for your registered domains @ inwx |
+| INWX.com            | DynDNS2               | 60             | specific dyndns `username` & `password`                                                      | ✔️ 🆓 for your registered domains @ inwx | ⛔ for your registered domains @ inwx |
+| deSEC.io (dedyn.io) | DynDNS2               | 60             | `token`                                                                                      | ✔️ 🆓                                    | ✔️                                   |
+| DuckDNS.org         | DynDNS2               | 60             | `token`                                                                                      | ⛔                                        | ✔️                                   |
+| dynv6.com           | DynDNS2               | 60             | `token`                                                                                      | ✔️ 🆓                                    | ✔️                                   |
+| ddnss.de            | DynDNS2               | 10             | `update key` as `token`                                                                      | ⛔                                        | ✔️                                   |
+| IPv64.net           | DynDNS2               | 60             | `DynDNS Updatehash` as `token`                                                               | ✔️ 💲                                    | ✔️                                   |
+| dynu.com            | DynDNS2               | 30             | `username` & `password`                                                                      | ✔️ 🆓                                    | ✔️                                   |
 
 ## 📦 Requirements
 
