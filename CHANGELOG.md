@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.5.3 (2023-02-26)
+
+### Fix
+
+* Set constant alpine version as latest couses issues. [Eduard Veit]
+
+
 ## 0.5.2 (2023-02-26)
 
 ### Fix
