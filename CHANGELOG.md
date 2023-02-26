@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.5.2 (2023-02-26)
+
+### Fix
+
+* Incorrect dns ip handling via domrobot. [Eduard Veit]
+
+
 ## 0.5.1 (2022-11-21)
 
 ### Features
