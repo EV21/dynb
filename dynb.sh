@@ -130,7 +130,7 @@ function is_ip_address
       result=$?
     ;;
   esac
-  return $result
+  return "$result"
 }
 
 function loopMode
@@ -235,11 +235,11 @@ function do_dig_request
 {
   local dns_server=$1
   local record_type=$2
-  dig_response=$(dig @"$dns_server" in "$record_type" +short "$DYNB_DYN_DOMAIN")
+  dig_response=$(dig @"$dns_server" in "$record_type" +short "$DYNB_DYN_DOMAIN" 2>&1)
   dig_exitcode=$?
   if [[ $dig_exitcode -gt 0 ]]
   then
-    errorMessage "DNS request failed with exit code: $dig_exitcode $dig_response"
+    errorMessage "DNS request for $record_type @ $dns_server failed with exit code: $dig_exitcode $dig_response"
     unset _dns_ip
     return 1
   else
@@ -271,8 +271,8 @@ function getDNSIP() {
   local record_type=$1
   if [[ $DYNB_UPDATE_METHOD == domrobot ]]
   then
-    echo "$_dns_records" |
-      jq --raw-output "select(.type == \"${record_type}\") | .content"
+    _dns_ip=$(echo "$_dns_records" |
+      jq --raw-output "select(.type == \"${record_type}\") | .content")
   else
     for current_dns_server in "${provider_dns_servers[@]}"
     do
@@ -322,7 +322,7 @@ function getRemoteIP
     # shellcheck disable=2181
     if [[ $curls_status_code -gt 0 ]]
     then
-      errorMessage "Remote IPv$ip_version request failed with ${current_check_server} curl status code: $curls_status_code"
+      errorMessage "Remote IPv$ip_version request @ ${current_check_server} failed with curl status code: $curls_status_code"
       _has_remote_ip_error=true
       return_value=1
     else
@@ -354,7 +354,7 @@ function getRemoteIP
     fi
   ;;
   esac
-  return $return_value
+  return "$return_value"
 }
 
 # requires parameter
@@ -1072,7 +1072,7 @@ function main
     do
       doUpdates
       debugMessage "wait $DYNB_INTERVAL seconds until next check"
-      sleep $DYNB_INTERVAL
+      sleep "$DYNB_INTERVAL"
     done
   else doUpdates
   fi
