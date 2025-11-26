@@ -222,7 +222,7 @@ function fetchDNSRecords
 function getRecordID
 {
   echo "$_dns_records" |
-    jq "select(.type == \"${1}\") | .id"
+    jq --raw-output "select(.type == \"${1}\") | .id"
 }
 
 ## do_dig_request A B
